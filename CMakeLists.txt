@@ -11,6 +11,8 @@ set(CPP_FILES
     source/request.cpp
 )
 
+SET(WITH_TCP_SSL ON CACHE BOOL "" FORCE)
+
 include("${CMAKE_SOURCE_DIR}/third_party/network.cmake")
 include("${CMAKE_SOURCE_DIR}/third_party/cli11.cmake")
 include("${CMAKE_SOURCE_DIR}/third_party/libfmt.cmake")
