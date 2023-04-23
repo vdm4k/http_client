@@ -617,9 +617,15 @@ std::string_view to_string(types type) {
 
 namespace bro::net::http {
 
+enum {
+  e_rn_size = 2,
+  e_semicolon_space_size = 2,
+  e_header_add_size = e_semicolon_space_size + e_rn_size,
+  e_2_spoce_size = 2
+};
+
 void request::add_header(header::types type, std::string const &value) {
-  const size_t add_size = 4; // ": " and "\r\n"
-  _total_size += value.size() + header::to_string(type).size() + add_size;
+  _total_size += value.size() + header::to_string(type).size() + e_header_add_size;
   _headers.push_back({type, value});
 }
 
@@ -649,7 +655,9 @@ std::optional<uint16_t> get_port(UriUriA const &uri, connection_type conn_type) 
   return port ? *port : conn_type == connection_type::e_http ? 443 : 80;
 }
 
-bool request::send_data() {
+void request::resolve_host() {}
+
+bool request::create_stream() {
   switch (_connection_type) {
   case connection_type::e_http: {
     bro::net::tcp::send::settings send_set;
@@ -664,34 +672,49 @@ bool request::send_data() {
     break;
   }
   default:
-    break;
+    // handle error
+    return false;
   }
+  if (!_send_stream->is_active()) {
+    // handle error
+    return false;
+  }
+
+  _factory.bind(_send_stream);
+  _send_stream->set_state_changed_cb(
+    [&](strm::stream *strm, std::any) {
+      switch (strm->get_state()) {
+      case strm::stream::state::e_established:
+        //        send_data();
+        _ready_send_data = true;
+        break;
+      case strm::stream::state::e_wait:
+        return;
+        break;
+      default:
+        _result(_response, "brum", this); // just for test
+        // handle error
+        break;
+      }
+    },
+    nullptr);
+  _send_stream->set_received_data_cb(
+    [&](strm::stream *strm, std::any) {
+      char buffer[2000] = {};
+      auto res = strm->receive((std::byte *) buffer, 2000);
+      if (res > 0)
+        _response.append(buffer, res);
+    },
+    nullptr);
 
   //  _send_stream->send((std::byte *) buffer, _total_size + 2);
   return true;
 }
 
-bool request::send() {
-  add_header(header::types::e_Connection, "close");
-  //    request.add_header(bro::net::http::header::types::e_Host, "mobile-review.com");
-  UriParserStateA state;
-  UriUriA uri;
-  state.uri = &uri;
-  if (uriParseUriA(&state, _url.c_str()) != URI_SUCCESS) {
-    return false;
-  }
-  if (!uri.hostText.first) {
-    return false;
-  }
-
-  std::string_view host(uri.hostText.first, std::distance(uri.hostText.first, uri.hostText.afterLast));
-  std::string_view path(uri.hostText.afterLast);
-  _total_size += header::to_string(header::types::e_Host).size() + host.size() + 4;      // host size
-  _total_size += to_string(_type).size() + path.size() + to_string(_version).size() + 4; // path size
-
-  int total = _total_size + 2;
-  char buffer[total + 1];
-  memset(buffer, 0, total + 1);
+void request::send_data() {
+  int total = _total_size + e_rn_size;
+  std::byte buffer[total];
+  //  memset(buffer, 0, total);
 
   //  GET /all/ HTTP/1.1
   //  Host: mobile-review.com
@@ -705,35 +728,51 @@ bool request::send() {
   //  _total_size += header::to_string(header::types::e_Host).size() + host.size() + 4;      // host size
   //  _total_size += to_string(_type).size() + path.size() + to_string(_version).size() + 4; // path size
 
-  auto res = fmt::format_to_n(buffer, total, "{} {} {}\r\n", to_string(_type), path, to_string(_version));
-  res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", header::to_string(header::types::e_Host), host).out;
+  auto res = fmt::format_to_n((char *) buffer, total, "{} {} {}\r\n", to_string(_type), _path, to_string(_version));
+  res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", header::to_string(header::types::e_Host), _host).out;
   for (auto const &hdr : _headers) {
     res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", header::to_string(hdr.first), hdr.second).out;
   }
   res.out = fmt::format_to_n(res.out, total, "\r\n").out;
-  std::cout << buffer << std::endl;
-  std::cout << std::distance(buffer, res.out) << std::endl;
-  std::cout << total << std::endl;
+  _send_stream->send(buffer, total);
+}
 
-  //  std::string path;
-  //  if (!uri.pathHead || uri.pathHead->text.first == uri.pathHead->text.afterLast) {
-  //    char const *default_path = "/";
-  //    path = default_path;
-  //  } else {
-  //    path = _url.substr(_url.find({uri.pathHead->text.first, uri.pathHead->text.afterLast}));
-  //  }
+void request::proceed() {
+  _resolver.proceed();
+  _factory.proceed();
+  if (_ready_send_data) {
+    send_data();
+    _ready_send_data = false;
+  }
+}
+
+bool request::send() {
+  UriParserStateA state;
+  UriUriA uri;
+  state.uri = &uri;
+  if (uriParseUriA(&state, _url.c_str()) != URI_SUCCESS) {
+    return false;
+  }
+  if (!uri.hostText.first) {
+    return false;
+  }
 
   {
     auto conn_type = get_connection_type(uri);
     if (!conn_type)
       return false;
-
     _connection_type = *conn_type;
   }
 
   auto port = get_port(uri, _connection_type);
   if (!port)
     return false;
+
+  add_header(header::types::e_Connection, "close"); //
+  _host = std::string_view(uri.hostText.first, std::distance(uri.hostText.first, uri.hostText.afterLast));
+  _path = std::string_view(uri.hostText.afterLast);
+  _total_size += header::to_string(header::types::e_Host).size() + _host.size() + e_header_add_size;
+  _total_size += to_string(_type).size() + _path.size() + to_string(_version).size() + e_rn_size + e_2_spoce_size;
 
   //  return true;
 
@@ -743,20 +782,20 @@ bool request::send() {
     } else {
       _server_address = {proto::ip::v6::address(uri.hostData.ip6->data), *port};
     }
-    send();
+    create_stream();
 
   } else {
-    _resolver.resolve(uri.hostText.first,
+    _resolver.resolve({_host.begin(), _host.end()},
                       proto::ip::address::version::e_v4,
                       [port = *port, this](bro::net::proto::ip::address const &addr,
                                            std::string const & /*hostname*/,
                                            char const *err) {
                         if (err) {
-                          //_
+                          // handle error
 
                         } else {
                           _server_address = proto::ip::full_address(addr, port);
-                          send_data();
+                          create_stream();
                         }
                       });
   }

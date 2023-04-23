@@ -329,6 +329,8 @@ namespace bro::net::http {
 
 enum class connection_type { e_http, e_https };
 
+using result_cbt = std::function<void(std::string const &response, char const *const error, std::any user_data)>;
+
 class request {
 public:
   enum class version {
@@ -346,10 +348,11 @@ public:
     e_TRACE,   ///< Performs a message loop-back test along the path to the target resource.
   };
 
-  request(type tp, std::string url, version ver = version::e_1_1)
+  request(type tp, std::string url, result_cbt const &result, version ver = version::e_1_1)
     : _type(tp)
     , _url(std::move(url))
-    , _version(ver) {}
+    , _version(ver)
+    , _result(result) {}
 
   static std::string_view to_string(type t);
   static std::string_view to_string(version ver);
@@ -359,22 +362,31 @@ public:
   void add_body(header::types type, std::string const &value);
   void add_body_ex(header::types type, std::string_view const &value);
   bool send();
+  void proceed();
 
 private:
-  bool send_data();
+  bool create_stream();
+  void resolve_host();
+  void send_data();
+
+  type _type{};
+  std::string _url;
+  version _version{version::e_1_1};
+  result_cbt _result;
 
   size_t _total_size = 0;
   std::vector<std::pair<header::types, std::string>> _headers;
   std::string _body;
   std::string_view _body_ex;
-  type _type{};
-  std::string _url;
-  version _version{version::e_1_1};
   dns::resolver _resolver;
   bro::net::ev::factory _factory;
   strm::stream_ptr _send_stream;
   proto::ip::full_address _server_address;
   connection_type _connection_type{connection_type::e_https};
+  std::string_view _path;
+  std::string_view _host;
+  std::string _response;
+  bool _ready_send_data = false;
 };
 
 } // namespace bro::net::http
