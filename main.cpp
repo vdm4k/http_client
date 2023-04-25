@@ -4,7 +4,7 @@
 int main(int argc, char **argv) {
   bool receive{false};
   bro::net::http::request request(bro::net::http::request::type::e_GET,
-                                  "http://mobile-review.com/all/",
+                                  "https://mobile-review.com/all/",
                                   // "https://mobile-review.com/all/",
                                   [&receive](std::string const &response, char const *const error, std::any user_data) {
                                     receive = true;

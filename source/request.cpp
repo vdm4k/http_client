@@ -652,7 +652,7 @@ std::optional<uint16_t> get_port(UriUriA const &uri, connection_type conn_type) 
     }
   }
 
-  return port ? *port : conn_type == connection_type::e_http ? 443 : 80;
+  return port ? *port : conn_type == connection_type::e_http ? 80 : 443;
 }
 
 void request::resolve_host() {}
@@ -685,8 +685,8 @@ bool request::create_stream() {
     [&](strm::stream *strm, std::any) {
       switch (strm->get_state()) {
       case strm::stream::state::e_established:
-        //        send_data();
-        _ready_send_data = true;
+        send_data();
+        //_ready_send_data = true;
         break;
       case strm::stream::state::e_wait:
         return;
