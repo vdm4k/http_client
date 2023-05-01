@@ -18,7 +18,8 @@ int main(int /*argc*/, char ** /*argv*/) {
   bool receive{false};
 
   bro::net::http::request request(bro::net::http::request::type::e_GET,
-                                  "https://mobile-review.com/all/",
+                                  "https://ethereal.com/download",
+                                  //                                  "https://mobile-review.com/all/",
                                   {._cb =
                                      [&receive](bro::net::http::response &&resp,
                                                 char const *const error,

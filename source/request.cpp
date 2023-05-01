@@ -100,6 +100,7 @@ bool request::create_stream() {
   case connection_type::e_https: {
     bro::net::tcp::ssl::send::settings send_set;
     send_set._peer_addr = _server_address;
+    send_set._host_name = _host;
     _send_stream = _factory.create_stream(&send_set);
     break;
   }
