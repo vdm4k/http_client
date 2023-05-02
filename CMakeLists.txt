@@ -25,6 +25,7 @@ include("${CMAKE_SOURCE_DIR}/third_party/cli11.cmake")
 include("${CMAKE_SOURCE_DIR}/third_party/libfmt.cmake")
 include("${CMAKE_SOURCE_DIR}/third_party/uriparser.cmake")
 include("${CMAKE_SOURCE_DIR}/third_party/dns_resolver.cmake")
+include("${CMAKE_SOURCE_DIR}/third_party/zlib.cmake")
 find_package(Threads REQUIRED)
 
 add_executable(${PROJECT_NAME}  ${H_FILES} ${CPP_FILES}  main.cpp )
@@ -52,4 +53,4 @@ if(WITH_EXAMPLES)
 endif()
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads llhttp::llhttp bro::network CLI11::CLI11 fmt::fmt uriparser::uriparser dns_resolver::dns_resolver)
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads llhttp::llhttp bro::network CLI11::CLI11 fmt::fmt uriparser::uriparser dns_resolver::dns_resolver ZLIB::ZLIB)
