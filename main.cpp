@@ -1,43 +1,42 @@
 #include <http_client/request.h>
+#include <CLI/CLI.hpp>
 #include <iostream>
 
 void print_response(bro::net::http::response &resp) {
   std::cout << "---------- HTTP Response ----------\n";
   std::cout << "statuc code: " << bro::net::http::status::to_string(resp.get_status_code()) << "\n";
   std::cout << "version: " << bro::net::http::header::to_string(resp.get_version()) << "\n";
-  auto headers = resp.get_headers();
-  for (auto const hdr : headers) {
-    std::cout << "header: " << bro::net::http::header::to_string(hdr._type) << ": " << hdr._value << "\n";
+  std::cout << "-------headers-------\n";
+  for (auto const &hdr : resp.get_headers()) {
+    std::cout << hdr._type << ": " << hdr._value << "\n";
   }
-  std::cout << "body: " << resp.get_body() << "\n";
-  std::cout << "\n\n---------- Debug output ----------\n";
-  std::cout << "full message is: " << resp.get_full_message() << "\n";
+  std::cout << "-------body-------\n";
+  std::cout << resp.get_body() << "\n";
 }
 
-int main(int /*argc*/, char ** /*argv*/) {
+int main(int argc, char **argv) {
+  CLI::App app{"tcp_server"};
+  //  std::string url{"https://ethereal.com/download"};
+  std::string url{"https://mobile-review.com/all/"};
+
+  app.add_option("-u,--url", url, "full url");
+  CLI11_PARSE(app, argc, argv);
+
   bool receive{false};
 
-  bro::net::http::request request(bro::net::http::request::type::e_GET,
-                                  "https://ethereal.com/download",
-                                  //                                  "https://mobile-review.com/all/",
-                                  {._cb =
-                                     [&receive](bro::net::http::response &&resp,
-                                                char const *const error,
-                                                std::any /*user_data*/) {
-                                       receive = true;
-                                       if (error) {
-                                         std::cout << "failed with error - " << error << std::endl;
-                                       } else {
-                                         print_response(resp);
-                                       }
-                                     },
-                                   ._data = nullptr});
-  request.add_header(
-    bro::net::http::header::types::e_Accept_Encoding,
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/"
-    "signed-exchange;v=b3;q=0.7");
-
-  request.send();
+  bro::net::http::request request;
+  request.send(bro::net::http::request::type::e_GET,
+               url,
+               {._cb =
+                  [&receive](bro::net::http::response &&resp, char const *const error, std::any /*user_data*/) {
+                    receive = true;
+                    if (error) {
+                      std::cout << error << std::endl;
+                    } else {
+                      print_response(resp);
+                    }
+                  },
+                ._data = nullptr});
   while (!receive)
     request.proceed();
   return 0;

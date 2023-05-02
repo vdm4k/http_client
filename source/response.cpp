@@ -11,19 +11,10 @@ header::version response::get_version() const {
 }
 
 std::string_view response::get_body() const {
-  if (_body.size)
-    return {_full_message.data() + _body.start, _body.size};
-  return {};
+  return _body;
 }
 
-std::string const &response::get_full_message() const noexcept {
-  return _full_message;
-}
-
-std::vector<response::header_data> response::get_headers() const {
-  std::vector<header_data> res;
-  for (auto const &h : _headers)
-    res.push_back({h._type, {_full_message.data() + h.start, h.size}});
-  return res;
+std::vector<response::header_data> const &response::get_headers() const {
+  return _headers;
 }
 } // namespace bro::net::http

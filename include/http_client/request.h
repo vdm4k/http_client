@@ -9,7 +9,6 @@
 #include <vector>
 #include <dns/resolver.h>
 #include <network/stream/factory.h>
-#include <span>
 
 namespace bro::net::http {
 
@@ -23,6 +22,8 @@ struct result {
 
 class request {
 public:
+  enum class state { e_idle, e_active };
+
   enum class type {
     e_GET, ///< The GET method is used to retrieve information from the given server using a given URI. Requests using GET should only retrieve data and should have no other effect on the data.
     e_HEAD, ///< Same as GET, but transfers the status line and header section only.
@@ -34,28 +35,26 @@ public:
     e_TRACE,   ///< Performs a message loop-back test along the path to the target resource.
     e_Unknown_Type
   };
-
-  request(type tp, std::string url, result const &result, header::version ver = header::version::e_1_1)
-    : _type(tp)
-    , _url(std::move(url))
-    , _version(ver)
-    , _result(result)
-    , _resolver({}) {}
-
   static std::string_view to_string(type tp);
   static type to_type(std::string_view const &tp);
 
-  void add_header(header::types type, std::string const &value);
-  void add_header_v(header::types type, std::string_view const &value);
-  void add_body(header::types type, std::string const &value);
-  void add_body_v(header::types type, std::string_view const &value);
-  bool send();
+  request();
+  bool send(type tp, std::string url, result const &result, header::version ver = header::version::e_1_1);
+  void add_header(std::string_view const &type, std::string_view const &value);
+  void add_header(std::string const &type, std::string const &value);
+  void add_body(std::string const &value);
+  void add_body(std::string_view const &value);
   void proceed();
+  bool is_active() { return _state == state::e_active; }
 
 private:
   bool create_stream();
   void resolve_host();
-  void send_data();
+  void generate_message();
+  bool parse_uri();
+  void init_parser();
+  void set_state(state st);
+  void set_error(char const *error);
 
   static int handle_on_message_complete(llhttp_t *h);
   static int on_status(llhttp_t *parser, char const *at, size_t length);
@@ -70,9 +69,10 @@ private:
   result _result;
 
   size_t _total_size = 0;
-  std::vector<std::pair<header::types, std::string>> _headers;
-  std::string _body;
-  std::string_view _body_ex;
+  std::vector<std::pair<std::string_view, std::string_view>> _headers_v;
+  std::vector<std::pair<std::string, std::string>> _headers_s;
+  std::string _body_s;
+  std::string_view _body_v;
   dns::resolver _resolver;
   bro::net::ev::factory _factory;
   strm::stream_ptr _send_stream;
@@ -80,12 +80,11 @@ private:
   connection_type _connection_type{connection_type::e_https};
   std::string_view _path;
   std::string_view _host;
-  std::string _response_str;
-  bool _ready_send_data = false;
 
-  llhttp_t parser;
-  llhttp_settings_t settings{};
-  std::string _data;
+  state _state{state::e_idle};
+  response _resp;
+  llhttp_t _parser;
+  llhttp_settings_t _settings{};
 };
 
 } // namespace bro::net::http
