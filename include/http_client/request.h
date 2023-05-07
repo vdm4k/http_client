@@ -29,7 +29,7 @@ public:
     bool _close_connection{true};
     bool _support_gzip{true};
   };
-  
+
   enum class state { e_idle, e_active };
 
   enum class type {
@@ -64,6 +64,7 @@ private:
   void set_error(char const *error);
   void cleanup();
   void redirect();
+  bool generate_from_url();
 
   static int handle_on_message_complete(llhttp_t *h);
   static int on_status(llhttp_t *parser, char const *at, size_t length);

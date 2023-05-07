@@ -238,12 +238,7 @@ void request::redirect() {
   _host = {};
   _url = it->_value;
   _response = {};
-  if (!parse_uri())
-    return;
-  if (!_host.empty())
-    resolve_host();
-  else
-    generate_message();
+  generate_from_url();
 }
 
 int request::handle_on_message_complete(llhttp_t *h) {
@@ -404,6 +399,16 @@ void request::resolve_host() {
                     });
 }
 
+bool request::generate_from_url() {
+  if (!parse_uri())
+    return false;
+  if (!_host.empty())
+    resolve_host();
+  else
+    generate_message();
+  return true;
+}
+
 bool request::send(type tp, std::string url, result const &result, settings *set) {
   if (is_active()) {
     result._cb({}, "request is in active state", result._data); // just for test
@@ -415,14 +420,7 @@ bool request::send(type tp, std::string url, result const &result, settings *set
     _client_setting = *set;
   _result = std::move(result);
   _url = std::move(url);
-
-  if (!parse_uri())
-    return false;
-  if (!_host.empty())
-    resolve_host();
-  else
-    generate_message();
-  return true;
+  return generate_from_url();
 }
 
 } // namespace bro::net::http
