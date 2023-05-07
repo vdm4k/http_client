@@ -15,10 +15,9 @@ void print_response(bro::net::http::response &resp) {
 }
 
 int main(int argc, char **argv) {
-  CLI::App app{"tcp_server"};
+  CLI::App app{"http_client"};
   //  std::string url{"https://ethereal.com/download"};
   std::string url{"https://mobile-review.com/all/"};
-
   app.add_option("-u,--url", url, "full url");
   CLI11_PARSE(app, argc, argv);
 
