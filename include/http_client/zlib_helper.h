@@ -15,7 +15,6 @@ public:
   bool process(Bytef *data, size_t lenght, std::any user_data, result_fun_t result_f, bool last_chunk = false);
 
 private:
-  void init();
   z_stream _stream;
   type _type{type::e_not_set};
 };

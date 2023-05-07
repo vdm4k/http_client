@@ -138,8 +138,6 @@ void request::init_parser() {
 
 void request::generate_message() {
   init_parser();
-  char const *close = "close";
-  add_header(header::to_string(header::types::e_Connection), close); //
   _total_size += to_string(_type).size() + _path.size() + header::to_string(_version).size() + e_rn_size
                  + e_2_spoce_size;                                                                   // path size
   _total_size += header::to_string(header::types::e_Host).size() + _host.size() + e_header_add_size; // host size
@@ -182,9 +180,21 @@ int request::on_status(llhttp_t *parser, char const *at, size_t length) {
   return 0;
 }
 
+void request::decoded_data(Bytef *data, size_t lenght, std::any user_data, char const *error) {
+  request *req = std::any_cast<request *>(user_data);
+  if (error) {
+    req->set_error(error);
+  } else {
+    req->_resp._body.append((char const *) data, lenght);
+  }
+}
+
 int request::on_body(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
-  req->_resp._body.append(at, length);
+  if (req->_resp._is_gzip_encoded) {
+    req->_decoder.process((Bytef *) at, length, req, decoded_data);
+  } else
+    req->_resp._body.append(at, length);
   return 0;
 }
 
@@ -208,6 +218,10 @@ int request::on_header_value(llhttp_t *parser, char const *at, size_t length) {
     return 0;
   auto &hdr = req->_resp._headers.back();
   hdr._value.append(at, length);
+  if (hdr._type == header::to_string(header::types::e_Content_Encoding))
+    req->_resp._is_gzip_encoded = hdr._value.find("gzip") != std::string::npos
+                                  && req->_decoder.init(bro::zlib::stream::type::e_decompressor);
+
   return 0;
 }
 
@@ -216,7 +230,7 @@ int request::handle_on_message_complete(llhttp_t *h) {
     return -1;
   request *req = (request *) h->data;
   req->_result._cb(std::move(req->_resp), nullptr, req->_result._data);
-  req->set_state(state::e_idle);
+  req->cleanup();
   return 0;
 }
 
@@ -328,11 +342,23 @@ bool request::parse_uri() {
 
 void request::set_error(char const *error) {
   _result._cb({}, error, _result._data);
-  set_state(state::e_idle);
+  cleanup();
 }
 
-void request::set_state(state st) {
-  _state = st;
+void request::cleanup() {
+  _type = {};
+  _url.clear();
+  _result = {};
+
+  _total_size = 0;
+  _headers_v.clear();
+  _headers_s.clear();
+  _body_s.clear();
+  _body_v = {};
+  _send_stream.reset();
+  _state = {state::e_idle};
+  _resp = {};
+  _decoder.cleanup();
 }
 
 void request::resolve_host() {

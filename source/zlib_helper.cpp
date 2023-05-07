@@ -56,7 +56,11 @@ bool stream::init(stream::type tp, result_fun_t result_f, std::any user_data) {
   }
   if (result != Z_OK && result_f)
     result_f(nullptr, 0, user_data, zError(result));
-  return result == Z_OK;
+  if (result != Z_OK)
+    return false;
+
+  _type = tp;
+  return true;
 }
 
 bool stream::process(Bytef *data, size_t lenght, std::any user_data, stream::result_fun_t result_f, bool last_chunk) {

@@ -25,5 +25,6 @@ private:
   header::version _version{header::version::e_Unknown_Version};
   std::vector<header_data> _headers;
   std::string _body;
+  bool _is_gzip_encoded{false};
 };
 } // namespace bro::net::http

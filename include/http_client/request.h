@@ -1,14 +1,15 @@
 #pragma once
-#include <http_client/header.h>
-#include <http_client/status.h>
-#include <http_client/response.h>
-#include <llhttp.h>
-#include <protocols/ip/full_address.h>
 #include <string_view>
 #include <string>
 #include <vector>
+#include <llhttp.h>
+#include <protocols/ip/full_address.h>
 #include <dns/resolver.h>
 #include <network/stream/factory.h>
+#include <http_client/header.h>
+#include <http_client/status.h>
+#include <http_client/response.h>
+#include <http_client/zlib_helper.h>
 
 namespace bro::net::http {
 
@@ -53,8 +54,8 @@ private:
   void generate_message();
   bool parse_uri();
   void init_parser();
-  void set_state(state st);
   void set_error(char const *error);
+  void cleanup();
 
   static int handle_on_message_complete(llhttp_t *h);
   static int on_status(llhttp_t *parser, char const *at, size_t length);
@@ -62,6 +63,7 @@ private:
   static int on_version(llhttp_t *parser, char const *at, size_t length);
   static int on_header_field(llhttp_t *parser, char const *at, size_t length);
   static int on_header_value(llhttp_t *parser, char const *at, size_t length);
+  static void decoded_data(Bytef *data, size_t lenght, std::any user_data, char const *error);
 
   type _type{};
   std::string _url;
@@ -85,6 +87,7 @@ private:
   response _resp;
   llhttp_t _parser;
   llhttp_settings_t _settings{};
+  zlib::stream _decoder;
 };
 
 } // namespace bro::net::http

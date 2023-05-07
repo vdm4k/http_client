@@ -24,6 +24,10 @@ int main(int argc, char **argv) {
   bool receive{false};
 
   bro::net::http::request request;
+  request.add_header(bro::net::http::header::to_string(bro::net::http::header::types::e_Accept_Encoding),
+                     "gzip, deflate");
+  char const *close = "close";
+  request.add_header(bro::net::http::header::to_string(bro::net::http::header::types::e_Connection), close);
   request.send(bro::net::http::request::type::e_GET,
                url,
                {._cb =
