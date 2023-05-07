@@ -124,49 +124,50 @@ bool request::create_stream() {
 
 void request::init_parser() {
   /* Initialize user callbacks and settings */
-  llhttp_settings_init(&_settings);
+  llhttp_settings_init(&_parser_settings);
   /* Set user callback */
-  _settings.on_message_complete = handle_on_message_complete;
-  _settings.on_status = on_status;
-  _settings.on_body = on_body;
-  _settings.on_version = on_version;
-  _settings.on_header_field = on_header_field;
-  _settings.on_header_value = on_header_value;
-  llhttp_init(&_parser, HTTP_RESPONSE, &_settings);
+  _parser_settings.on_message_complete = handle_on_message_complete;
+  _parser_settings.on_status = on_status;
+  _parser_settings.on_body = on_body;
+  _parser_settings.on_version = on_version;
+  _parser_settings.on_header_field = on_header_field;
+  _parser_settings.on_header_value = on_header_value;
+  llhttp_init(&_parser, HTTP_RESPONSE, &_parser_settings);
   _parser.data = this;
 }
 
 void request::generate_message() {
-  init_parser();
-  _total_size += to_string(_type).size() + _path.size() + header::to_string(_version).size() + e_rn_size
+  // add headers base on settings
+  if (_client_setting._support_gzip)
+    add_header(header::to_string(header::types::e_Accept_Encoding), "gzip, deflate");
+  if (_client_setting._close_connection) {
+    char const *close = "close";
+    add_header(header::to_string(header::types::e_Connection), close);
+  }
+
+  // count total size
+  _total_size += to_string(_type).size() + _path.size() + header::to_string(_client_setting._version).size() + e_rn_size
                  + e_2_spoce_size;                                                                   // path size
   _total_size += header::to_string(header::types::e_Host).size() + _host.size() + e_header_add_size; // host size
-
   int total = _total_size + e_rn_size;
+
+  // generate data
   std::byte buffer[total];
-
-  //  GET /all/ HTTP/1.1
-  //  Host: mobile-review.com
-  //  Connection: keep-alive
-  //  Upgrade-Insecure-Requests: 1
-  //  User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36
-  //  Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
-  // Accept-Encoding: gzip, deflate
-  // Accept-Language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7
-
-  //  _total_size += header::to_string(header::types::e_Host).size() + host.size() + 4;      // host size
-  //  _total_size += to_string(_type).size() + path.size() + to_string(_version).size() + 4; // path size
-
-  auto res
-    = fmt::format_to_n((char *) buffer, total, "{} {} {}\r\n", to_string(_type), _path, header::to_string(_version));
+  auto res = fmt::format_to_n((char *) buffer,
+                              total,
+                              "{} {} {}\r\n",
+                              to_string(_type),
+                              _path,
+                              header::to_string(_client_setting._version));
   res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", header::to_string(header::types::e_Host), _host).out;
   for (auto const &hdr : _headers_s)
     res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", hdr.first, hdr.second).out;
   for (auto const &hdr : _headers_v)
     res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", hdr.first, hdr.second).out;
-
   res.out = fmt::format_to_n(res.out, total, "\r\n").out;
+
   _send_stream->send(buffer, total);
+  init_parser();
 }
 
 void request::proceed() {
@@ -176,7 +177,7 @@ void request::proceed() {
 
 int request::on_status(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
-  req->_resp._status_code = status::to_code({at, length});
+  req->_response._status_code = status::to_code({at, length});
   return 0;
 }
 
@@ -185,22 +186,22 @@ void request::decoded_data(Bytef *data, size_t lenght, std::any user_data, char 
   if (error) {
     req->set_error(error);
   } else {
-    req->_resp._body.append((char const *) data, lenght);
+    req->_response._body.append((char const *) data, lenght);
   }
 }
 
 int request::on_body(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
-  if (req->_resp._is_gzip_encoded) {
+  if (req->_response._is_gzip_encoded) {
     req->_decoder.process((Bytef *) at, length, req, decoded_data);
   } else
-    req->_resp._body.append(at, length);
+    req->_response._body.append(at, length);
   return 0;
 }
 
 int request::on_version(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
-  req->_resp._version = header::to_version({at, length});
+  req->_response._version = header::to_version({at, length});
   return 0;
 }
 
@@ -208,29 +209,55 @@ int request::on_header_field(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
   response::header_data hdr;
   hdr._type.append(at, length);
-  req->_resp._headers.push_back(hdr);
+  req->_response._headers.push_back(hdr);
   return 0;
 }
 
 int request::on_header_value(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
-  if (req->_resp._headers.empty())
+  if (req->_response._headers.empty())
     return 0;
-  auto &hdr = req->_resp._headers.back();
+  auto &hdr = req->_response._headers.back();
   hdr._value.append(at, length);
   if (hdr._type == header::to_string(header::types::e_Content_Encoding))
-    req->_resp._is_gzip_encoded = hdr._value.find("gzip") != std::string::npos
-                                  && req->_decoder.init(bro::zlib::stream::type::e_decompressor);
+    req->_response._is_gzip_encoded = hdr._value.find("gzip") != std::string::npos
+                                      && req->_decoder.init(bro::zlib::stream::type::e_decompressor);
 
   return 0;
+}
+
+void request::redirect() {
+  auto it = std::find_if(_response._headers.begin(), _response._headers.end(), [](auto const &hdrs) {
+    return hdrs._type == header::to_string(header::types::e_Location);
+  });
+  if (it == _response._headers.end()) {
+    set_error("receive redirect, but couldn't find location");
+    return;
+  }
+
+  _host = {};
+  _url = it->_value;
+  _response = {};
+  if (!parse_uri())
+    return;
+  if (!_host.empty())
+    resolve_host();
+  else
+    generate_message();
 }
 
 int request::handle_on_message_complete(llhttp_t *h) {
   if (!h->data)
     return -1;
   request *req = (request *) h->data;
-  req->_result._cb(std::move(req->_resp), nullptr, req->_result._data);
-  req->cleanup();
+  auto &res = req->_response;
+  if (req->_client_setting._support_redirect && status::code::e_Moved_Permanently <= res.get_status_code()
+      && res.get_status_code() <= status::code::e_Permanent_Redirect) {
+    req->redirect();
+  } else {
+    req->_result._cb(std::move(res), nullptr, req->_result._data);
+    req->cleanup();
+  }
   return 0;
 }
 
@@ -347,7 +374,6 @@ void request::set_error(char const *error) {
 
 void request::cleanup() {
   _type = {};
-  _url.clear();
   _result = {};
 
   _total_size = 0;
@@ -357,8 +383,9 @@ void request::cleanup() {
   _body_v = {};
   _send_stream.reset();
   _state = {state::e_idle};
-  _resp = {};
+  _response = {};
   _decoder.cleanup();
+  _client_setting = {};
 }
 
 void request::resolve_host() {
@@ -377,16 +404,17 @@ void request::resolve_host() {
                     });
 }
 
-bool request::send(type tp, std::string url, result const &result, header::version ver) {
+bool request::send(type tp, std::string url, result const &result, settings *set) {
   if (is_active()) {
     result._cb({}, "request is in active state", result._data); // just for test
     return false;
   }
   _state = state::e_active;
   _type = tp;
-  _url = std::move(url);
-  _version = ver;
+  if (set)
+    _client_setting = *set;
   _result = std::move(result);
+  _url = std::move(url);
 
   if (!parse_uri())
     return false;
@@ -394,7 +422,6 @@ bool request::send(type tp, std::string url, result const &result, header::versi
     resolve_host();
   else
     generate_message();
-
   return true;
 }
 

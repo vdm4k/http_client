@@ -23,6 +23,13 @@ struct result {
 
 class request {
 public:
+  struct settings {
+    header::version _version{header::version::e_1_1};
+    bool _support_redirect{true};
+    bool _close_connection{true};
+    bool _support_gzip{true};
+  };
+  
   enum class state { e_idle, e_active };
 
   enum class type {
@@ -40,7 +47,7 @@ public:
   static type to_type(std::string_view const &tp);
 
   request();
-  bool send(type tp, std::string url, result const &result, header::version ver = header::version::e_1_1);
+  bool send(type tp, std::string url, result const &result, settings *set = nullptr);
   void add_header(std::string_view const &type, std::string_view const &value);
   void add_header(std::string const &type, std::string const &value);
   void add_body(std::string const &value);
@@ -56,6 +63,7 @@ private:
   void init_parser();
   void set_error(char const *error);
   void cleanup();
+  void redirect();
 
   static int handle_on_message_complete(llhttp_t *h);
   static int on_status(llhttp_t *parser, char const *at, size_t length);
@@ -67,7 +75,6 @@ private:
 
   type _type{};
   std::string _url;
-  header::version _version{header::version::e_1_1};
   result _result;
 
   size_t _total_size = 0;
@@ -84,10 +91,11 @@ private:
   std::string_view _host;
 
   state _state{state::e_idle};
-  response _resp;
+  response _response;
   llhttp_t _parser;
-  llhttp_settings_t _settings{};
+  llhttp_settings_t _parser_settings{};
   zlib::stream _decoder;
+  settings _client_setting;
 };
 
 } // namespace bro::net::http
