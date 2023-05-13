@@ -3,8 +3,8 @@
 
 namespace bro::net::http::status {
 
-std::string_view to_string(code c) {
-  switch (c) {
+std::string_view to_string(code cd) {
+  switch (cd) {
   case code::e_Continue:
     return "Continue";
   case code::e_Switching_Protocols:

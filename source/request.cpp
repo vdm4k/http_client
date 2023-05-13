@@ -68,12 +68,12 @@ void request::add_header(std::string const &type, std::string const &value) {
   _headers_s.push_back({type, value});
 }
 
-void request::add_body(std::string const &value) {
-  _body_s = value;
+void request::add_body(std::string const &body) {
+  _body_s = body;
 }
 
-void request::add_body(std::string_view const &value) {
-  _body_v = value;
+void request::add_body(std::string_view const &body) {
+  _body_v = body;
 }
 
 bool request::create_stream() {
@@ -138,15 +138,15 @@ void request::init_parser() {
 
 void request::generate_message() {
   // add headers base on settings
-  if (_client_setting._support_gzip)
+  if (_settings._support_gzip)
     add_header(header::to_string(header::types::e_Accept_Encoding), "gzip, deflate");
-  if (_client_setting._close_connection) {
+  if (_settings._close_connection) {
     char const *close = "close";
     add_header(header::to_string(header::types::e_Connection), close);
   }
 
   // count total size
-  _total_size += to_string(_type).size() + _path.size() + header::to_string(_client_setting._version).size() + e_rn_size
+  _total_size += to_string(_type).size() + _path.size() + header::to_string(_settings._version).size() + e_rn_size
                  + e_2_spoce_size;                                                                   // path size
   _total_size += header::to_string(header::types::e_Host).size() + _host.size() + e_header_add_size; // host size
   int total = _total_size + e_rn_size;
@@ -158,7 +158,7 @@ void request::generate_message() {
                               "{} {} {}\r\n",
                               to_string(_type),
                               _path,
-                              header::to_string(_client_setting._version));
+                              header::to_string(_settings._version));
   res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", header::to_string(header::types::e_Host), _host).out;
   for (auto const &hdr : _headers_s)
     res.out = fmt::format_to_n(res.out, total, "{}: {}\r\n", hdr.first, hdr.second).out;
@@ -193,7 +193,7 @@ void request::decoded_data(Bytef *data, size_t lenght, std::any user_data, char 
 int request::on_body(llhttp_t *parser, char const *at, size_t length) {
   request *req = (request *) parser->data;
   if (req->_response._is_gzip_encoded) {
-    req->_decoder.process((Bytef *) at, length, req, decoded_data);
+    req->_zstream.process((Bytef *) at, length, req, decoded_data);
   } else
     req->_response._body.append(at, length);
   return 0;
@@ -221,7 +221,7 @@ int request::on_header_value(llhttp_t *parser, char const *at, size_t length) {
   hdr._value.append(at, length);
   if (hdr._type == header::to_string(header::types::e_Content_Encoding))
     req->_response._is_gzip_encoded = hdr._value.find("gzip") != std::string::npos
-                                      && req->_decoder.init(bro::zlib::stream::type::e_decompressor);
+                                      && req->_zstream.init(bro::zlib::stream::type::e_decompressor);
 
   return 0;
 }
@@ -246,7 +246,7 @@ int request::handle_on_message_complete(llhttp_t *h) {
     return -1;
   request *req = (request *) h->data;
   auto &res = req->_response;
-  if (req->_client_setting._support_redirect && status::code::e_Moved_Permanently <= res.get_status_code()
+  if (req->_settings._support_redirect && status::code::e_Moved_Permanently <= res.get_status_code()
       && res.get_status_code() <= status::code::e_Permanent_Redirect) {
     req->redirect();
   } else {
@@ -256,12 +256,31 @@ int request::handle_on_message_complete(llhttp_t *h) {
   return 0;
 }
 
+/**
+ * \brief wrapper for uri parser lib
+ */
 struct uri_parser {
+  /**
+   * default ctor
+   */
   uri_parser() { _state.uri = &_uri; }
 
-  int parse(std::string const &url) { return uriParseUriA(&_state, url.c_str()); }
-  UriUriA const &get_uri() const { return _uri; }
   ~uri_parser() { uriFreeUriMembersA(&_uri); }
+
+  /*! \brief parse url
+  * \param [in] url request type
+  * \result uri parse result
+  */
+  int parse(std::string const &url) { return uriParseUriA(&_state, url.c_str()); }
+
+  /*! \brief get url
+  * \result uri
+  */
+  UriUriA const &get_uri() const { return _uri; }
+
+  /*! \brief error to string converter
+  * \result string representation of error
+  */
   static char const *uri_parser_error_to_string(int error) {
     switch (error) {
     case URI_SUCCESS:
@@ -293,8 +312,8 @@ struct uri_parser {
   }
 
 private:
-  UriUriA _uri{};
-  UriParserStateA _state{};
+  UriUriA _uri{};           ///< uri
+  UriParserStateA _state{}; ///< state
 };
 
 bool request::parse_uri() {
@@ -379,8 +398,8 @@ void request::cleanup() {
   _send_stream.reset();
   _state = {state::e_idle};
   _response = {};
-  _decoder.cleanup();
-  _client_setting = {};
+  _zstream.cleanup();
+  _settings = {};
 }
 
 void request::resolve_host() {
@@ -409,16 +428,16 @@ bool request::generate_from_url() {
   return true;
 }
 
-bool request::send(type tp, std::string url, result const &result, settings *set) {
+bool request::send(type tp, std::string url, result const &res, settings *set) {
   if (is_active()) {
-    result._cb({}, "request is in active state", result._data); // just for test
+    res._cb({}, "request is in active state", res._data); // just for test
     return false;
   }
   _state = state::e_active;
   _type = tp;
   if (set)
-    _client_setting = *set;
-  _result = std::move(result);
+    _settings = *set;
+  _result = std::move(res);
   _url = std::move(url);
   return generate_from_url();
 }
