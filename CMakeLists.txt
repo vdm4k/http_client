@@ -62,4 +62,4 @@ if(WITH_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads llhttp::llhttp bro::network fmt::fmt uriparser::uriparser dns_resolver::dns_resolver ZLIB::ZLIB)
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads llhttp::llhttp bro::network fmt::fmt uriparser::uriparser dns_resolver::dns_resolver zlib::zlib)

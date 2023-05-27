@@ -3,7 +3,7 @@ include(FetchContent)
 
 FetchContent_Declare(
   llhttp
-  URL "https://github.com/nodejs/llhttp/archive/refs/tags/release/v8.1.0.tar.gz"
+  GIT_REPOSITORY https://github.com/vdm4k/llhttp-release-v8.1.0.git
 )
 
 FetchContent_MakeAvailable(llhttp)
