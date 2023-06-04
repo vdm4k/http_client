@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace bro::net::http {
+namespace bro::net::http::client {
 /** @addtogroup http_client_request
  *  @{
  */
@@ -52,4 +52,4 @@ private:
   std::string _body;                                            ///< body ( uncompressed if gzip )
   bool _is_gzip_encoded{false};                                 ///< is commpressed by gzip
 };
-} // namespace bro::net::http
+} // namespace bro::net::http::client

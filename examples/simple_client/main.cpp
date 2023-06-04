@@ -2,7 +2,7 @@
 #include <CLI/CLI.hpp>
 #include <iostream>
 
-void print_response(bro::net::http::response &resp) {
+void print_response(bro::net::http::client::response &resp) {
   std::cout << "---------- HTTP Response ----------\n";
   std::cout << "statuc code: " << bro::net::http::status::to_string(resp.get_status_code()) << "\n";
   std::cout << "version: " << bro::net::http::header::to_string(resp.get_version()) << "\n";
@@ -22,11 +22,11 @@ int main(int argc, char **argv) {
 
   bool receive{false};
 
-  bro::net::http::request request;
-  request.send(bro::net::http::request::type::e_GET,
+  bro::net::http::client::request request;
+  request.send(bro::net::http::client::request::type::e_GET,
                url,
                {._cb =
-                  [&receive](bro::net::http::response &&resp, char const *const error, std::any /*user_data*/) {
+                  [&receive](bro::net::http::client::response &&resp, char const *const error, std::any /*user_data*/) {
                     receive = true;
                     if (error) {
                       std::cout << error << std::endl;

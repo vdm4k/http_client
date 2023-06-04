@@ -12,7 +12,7 @@
 #include <http_client/response.h>
 #include <http_client/zlib_helper.h>
 
-namespace bro::net::http {
+namespace bro::net::http::client {
 
 /** @defgroup http_client_request http_client_request
  *  @{
@@ -244,4 +244,4 @@ private:
   settings _settings;                                                    ///< settings per request
 };
 
-} // namespace bro::net::http
+} // namespace bro::net::http::client

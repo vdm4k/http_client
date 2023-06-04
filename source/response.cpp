@@ -1,6 +1,6 @@
 #include <http_client/response.h>
 
-namespace bro::net::http {
+namespace bro::net::http::client {
 
 status::code response::get_status_code() const {
   return _status_code;
@@ -17,4 +17,4 @@ std::string_view response::get_body() const {
 std::vector<response::header_data> const &response::get_headers() const {
   return _headers;
 }
-} // namespace bro::net::http
+} // namespace bro::net::http::client

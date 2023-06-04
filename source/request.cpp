@@ -6,7 +6,7 @@
 #include <network/tcp/ssl/send/settings.h>
 #include <iostream>
 
-namespace bro::net::http {
+namespace bro::net::http::client {
 
 std::string_view request::to_string(type tp) {
   switch (tp) {
@@ -442,4 +442,4 @@ bool request::send(type tp, std::string url, result const &res, settings *set) {
   return generate_from_url();
 }
 
-} // namespace bro::net::http
+} // namespace bro::net::http::client
