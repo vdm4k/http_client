@@ -27,6 +27,7 @@ public:
         bool _support_redirect{true};                     ///< redirect support
         bool _close_connection{true};                     ///< set close connection with server after receive response
         bool _support_gzip{true};                         ///< add header in request - support commpress data (gzip)
+        bool _try_decompress_response{true};              ///< if server compress body with gzip we will decompress it. If have problems with decompress -> may disable it
     };
 
     /**

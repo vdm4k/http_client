@@ -1,3 +1,4 @@
+#include <set>
 #include <string_view>
 #include <string>
 #include <vector>
@@ -196,6 +197,7 @@ private:
     llhttp_settings_t _parser_settings{};                                  ///< settings for parser http
     zlib::stream _zstream;                                                 ///< zlib decoder
     request::config _config;                                               ///< settings per request
+    bool _do_cleanup = false;
 };
 
 void request_impl::add_header(std::string_view const &type, std::string_view const &value) {
@@ -347,6 +349,10 @@ void request_impl::generate_message() {
 void request_impl::proceed() {
     _resolver.proceed();
     _factory.proceed();
+    if(_do_cleanup) {
+        cleanup();
+        _do_cleanup = false;
+    }
 }
 
 int request_impl::on_status(llhttp_t *parser, char const *at, size_t length) {
@@ -394,7 +400,8 @@ int request_impl::on_header_value(llhttp_t *parser, char const *at, size_t lengt
     auto &hdr = req->_response._headers.back();
     hdr._value.append(at, length);
     if (hdr._type == header::to_string(header::types::e_Content_Encoding))
-        req->_response._is_gzip_encoded = hdr._value.find("gzip") != std::string::npos
+        req->_response._is_gzip_encoded = req->_config._try_decompress_response &&
+                                          (hdr._value.find("gzip") != std::string::npos || hdr._value.find("deflate") != std::string::npos)
                                           && req->_zstream.init(bro::zlib::stream::type::e_decompressor);
 
     return 0;
@@ -558,7 +565,7 @@ bool request_impl::parse_uri() {
 
 void request_impl::set_error(char const *error) {
     _result._cb({}, error, _result._data);
-    cleanup();
+    _do_cleanup = true;
 }
 
 void request_impl::cleanup() {
