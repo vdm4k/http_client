@@ -3,6 +3,7 @@ project(http_client VERSION 0.9.0 DESCRIPTION "http client library")
 
 # core h files
 set(H_FILES
+    include/http_client/common.h
     include/http_client/request.h
     include/http_client/status.h
     include/http_client/header.h

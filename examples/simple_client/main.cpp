@@ -1,3 +1,4 @@
+#include "fmt/core.h"
 #include <http_client/request.h>
 #include <CLI/CLI.hpp>
 #include <iostream>
