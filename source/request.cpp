@@ -2,71 +2,20 @@
 #include <string>
 #include <vector>
 #include <charconv>
+#include <llhttp.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
 #include <dns/resolver.h>
 #include <uriparser/Uri.h>
 #include <network/tcp/ssl/send/settings.h>
 #include <protocols/ip/full_address.h>
-#include <llhttp.h>
 #include <network/stream/factory.h>
+#include <system/stack_allocator.h>
 #include <http_client/request.h>
 #include <http_client/common.h>
 #include <http_client/zlib_helper.h>
 
 namespace bro::net::http::client {
-
-template<typename ValueType, size_t Size>
-struct stack_allocator {
-    /**
-  * default ctor
-  */
-
-    explicit stack_allocator() noexcept = default;
-
-    explicit stack_allocator(size_t size) : _size(size) {
-        if(_size > Size)
-            _begin = new ValueType[size];
-    }
-
-    ~stack_allocator() {
-        if(_begin != _array)
-            delete []_begin;
-    }
-
-    /**
-  * default copy ctor
-  */
-    stack_allocator(stack_allocator const &res) = delete;
-    /**
-  * default move ctor
-  */
-    stack_allocator(stack_allocator &&res) = delete;
-    /**
-  * default assign operator
-  */
-    stack_allocator &operator=(stack_allocator const &res) = delete;
-    /**
-  * default assign move operator
-  */
-    stack_allocator &operator=(stack_allocator &&res) = delete;
-
-    size_t get_size() const noexcept {
-        return _size;
-    }
-
-    /**
-   * get point on array
-   *
-   * @return pointer on array
-   */
-    ValueType * get_array() const noexcept { return _begin; }
-
-private:
-    ValueType _array[Size];     ///< default array
-    ValueType *_begin = _array; ///< pointer on array
-    size_t _size = Size;
-};
 
 /**
  * \brief request implementation
@@ -314,7 +263,7 @@ bool request_impl::create_stream() {
         nullptr);
     _send_stream->set_received_data_cb(
         [&](strm::stream *strm, std::any) {
-            stack_allocator<std::byte, e_max_msg_size> st_allocator;
+            system::stack_allocator<std::byte, e_max_msg_size> st_allocator;
             auto res = strm->receive(st_allocator.get_array(), st_allocator.get_size());
             if (res > 0) {
                 auto err = llhttp_execute(&_parser, (char *)st_allocator.get_array(), res);
@@ -363,7 +312,7 @@ void request_impl::generate_message() {
 
     int total = _total_size + body_size + e_eol_size;
     // generate data
-    stack_allocator<std::byte, e_max_msg_size> st_allocator(total);
+    system::stack_allocator<std::byte, e_max_msg_size> st_allocator(total);
     auto res = fmt::format_to_n((char *) st_allocator.get_array(),
                                 total,
                                 "{} {} {}\r\n",

@@ -29,6 +29,7 @@ include("${PROJECT_SOURCE_DIR}/third_party/network.cmake")
 include("${PROJECT_SOURCE_DIR}/third_party/libfmt.cmake")
 include("${PROJECT_SOURCE_DIR}/third_party/uriparser.cmake")
 include("${PROJECT_SOURCE_DIR}/third_party/dns_resolver.cmake")
+include("${PROJECT_SOURCE_DIR}/third_party/system.cmake")
 include("${PROJECT_SOURCE_DIR}/third_party/zlib.cmake")
 find_package(Threads REQUIRED)
 
@@ -63,4 +64,4 @@ if(WITH_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads llhttp::llhttp bro::network fmt::fmt uriparser::uriparser dns_resolver::dns_resolver zlib::zlib)
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads system::system llhttp::llhttp bro::network fmt::fmt uriparser::uriparser dns_resolver::dns_resolver zlib::zlib)
