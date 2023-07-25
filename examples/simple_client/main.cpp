@@ -1,18 +1,17 @@
+#include "fmt/color.h"
 #include "fmt/core.h"
 #include <http_client/request.h>
 #include <CLI/CLI.hpp>
-#include <iostream>
 
 void print_response(bro::net::http::client::response &resp) {
-  std::cout << "---------- HTTP Response ----------\n";
-  std::cout << "statuc code: " << bro::net::http::status::to_string(resp.get_status_code()) << "\n";
-  std::cout << "version: " << bro::net::http::header::to_string(resp.get_version()) << "\n";
-  std::cout << "-------headers-------\n";
+  fmt::print(fg(fmt::color::dark_green) | fmt::emphasis::bold,"---------- HTTP Response ----------\n");
+  fmt::print("statuc code: {}\n", bro::net::http::status::to_string(resp.get_status_code()));
+  fmt::print("version: {}\n", bro::net::http::header::to_string(resp.get_version()));
+  fmt::print("---------- headers ----------\n");
   for (auto const &hdr : resp.get_headers()) {
-    std::cout << hdr._type << ": " << hdr._value << "\n";
+      fmt::print("{}: {}\n", hdr._type, hdr._value);
   }
-  std::cout << "-------body-------\n";
-  std::cout << resp.get_body() << "\n";
+  fmt::print("---------- body ----------\n{}\n", resp.get_body());
 }
 
 int main(int argc, char **argv) {
@@ -30,7 +29,7 @@ int main(int argc, char **argv) {
                   [&receive](bro::net::http::client::response &&resp, char const *const error, std::any /*user_data*/) {
                     receive = true;
                     if (error) {
-                      std::cout << error << std::endl;
+                      fmt::print(fg(fmt::color::crimson) | fmt::emphasis::bold,"request failed with error {}\n", error);
                     } else {
                       print_response(resp);
                     }

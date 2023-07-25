@@ -2,8 +2,10 @@
 #include <any>
 #include <functional>
 #include <memory>
-#include "http_client/version.h"
-#include "http_client/response.h"
+#include <stream/factory.h>
+#include <dns/resolver.h>
+#include <http_client/version.h>
+#include <http_client/response.h>
 
 namespace bro::net::http::client {
 
@@ -11,8 +13,9 @@ namespace bro::net::http::client {
  *  @{
  */
 
-class request_impl;
-
+namespace _private {
+class request;
+} // namespace _private
 /**
  * \brief header types
  */
@@ -33,7 +36,7 @@ public:
     /**
   * \brief request type
   */
-    enum class type {
+    enum class type : uint8_t {
         e_GET,          ///< The GET method is used to retrieve information from the given server using a given URI. Requests using GET should only retrieve data and should have no other effect on the data.
         e_HEAD,         ///< Same as GET, but transfers the status line and header section only.
         e_POST,         ///< A POST request is used to send data to the server, for example, customer information, file upload, etc. using HTML forms.
@@ -78,12 +81,29 @@ public:
    */
     request();
 
+    /**
+   * ctor with external factory and external dns resolver
+   */
+    request(std::shared_ptr<bro::strm::factory> const &factory, std::shared_ptr<dns::resolver> const & resolver);
+
+    /**
+   * move ctor
+   */
     request(request &&req);
 
+    /**
+   * move assign operator
+   */
     request& operator=(request &&req);
 
+    /**
+   * deleted assign constructor
+   */
     request(request const &) = delete;
 
+    /**
+   * deleted assign operator
+   */
     request& operator=(request const &) = delete;
 
     /**
@@ -98,7 +118,7 @@ public:
    * \param [in] set settings per request (optional)
    * \result if request initialization complete successfuly
    */
-    bool send(type tp, std::string url, result const &res, config *conf = nullptr);
+    bool send(type tp, std::string const &url, result const &res, config *conf = nullptr);
 
     /*! \brief add headers
    * \param [in] type header type
@@ -138,7 +158,7 @@ public:
     bool is_active();
 
 private:
-    std::unique_ptr<request_impl> _request;
+    std::unique_ptr<_private::request> _request;   ///< pimpl here
 };
 
 } // namespace bro::net::http::client

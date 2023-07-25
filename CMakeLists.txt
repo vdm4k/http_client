@@ -10,6 +10,8 @@ set(H_FILES
     include/http_client/response.h
     include/http_client/version.h
     include/http_client/zlib_helper.h
+    include/http_client/_private/request.h
+    include/http_client/_private/uri_parser.h
 )
 
 # core cpp files
@@ -20,6 +22,7 @@ set(CPP_FILES
     source/response.cpp
     source/version.cpp
     source/zlib_helper.cpp
+    source/_private/request.cpp
 )
 
 SET(WITH_TCP_SSL ON CACHE BOOL "" FORCE)

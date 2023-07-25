@@ -10,7 +10,7 @@ namespace bro::net::http::status {
  * \brief all response codes
  * \note see here https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
  */
-enum class code {
+enum class code : uint16_t {
     // Informational codes
     e_Continue = 100,            ///< Continue
     e_Switching_Protocols = 101, ///< Switching_Protocols

@@ -1,6 +1,7 @@
 #pragma once
 #include <any>
 #include <cstddef>
+#include <cstdint>
 #include <zlib.h>
 
 namespace bro::zlib {
@@ -16,7 +17,7 @@ public:
     /**
  * \brief steam type
  */
-    enum class type {
+    enum class type : uint8_t {
         e_compressor,   ///< compressor
         e_decompressor, ///< decompressor
         e_not_set       ///< type not set ( undefined )
@@ -55,8 +56,8 @@ public:
     bool process(Bytef *data, size_t lenght, std::any user_data, result_fun_t result_f, bool last_chunk = false);
 
 private:
-    z_stream _stream;            ///< current zstream
     type _type{type::e_not_set}; ///< current stream type
+    z_stream _stream;            ///< current zstream
 };
 
 }; // namespace bro::zlib

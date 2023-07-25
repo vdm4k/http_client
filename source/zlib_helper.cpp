@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <http_client/zlib_helper.h>
 #include <limits>
+#include <http_client/zlib_helper.h>
 
 namespace bro::zlib {
 
@@ -51,7 +51,7 @@ bool stream::init(stream::type tp, result_fun_t result_f, std::any user_data) {
   }
   case type::e_not_set:
     if (result_f)
-      result_f(nullptr, 0, user_data, "stream didn't specify");
+      result_f(nullptr, 0, user_data, "Need to specify stream type");
     return false;
   }
   if (result != Z_OK && result_f)

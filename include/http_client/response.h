@@ -10,6 +10,10 @@ namespace bro::net::http::client {
  *  @{
  */
 
+namespace _private {
+class request;
+} // namespace _private
+
 /*!\ response from server
  */
 class response {
@@ -43,12 +47,12 @@ public:
     std::vector<header_data> const &get_headers() const;
 
 private:
-    friend class request_impl;
+    friend class _private::request;
 
+    bool _is_gzip_encoded{false};                                 ///< is commpressed by gzip
     status::code _status_code{status::code::e_Unknown_Code};      ///< status code
     header::version _version{header::version::e_Unknown_Version}; ///< http version
     std::vector<header_data> _headers;                            ///< array of headers
     std::string _body;                                            ///< body ( uncompressed if gzip )
-    bool _is_gzip_encoded{false};                                 ///< is commpressed by gzip
 };
 } // namespace bro::net::http::client

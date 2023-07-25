@@ -9,7 +9,7 @@ namespace bro::net::http::header {
 /**
  * \brief http version
  */
-enum class version {
+enum class version : uint8_t {
     e_1_0,            ///< http version 1.0
     e_1_1,            ///< http version 1.1
     e_Unknown_Version ///< http version not set or unknown

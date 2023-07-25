@@ -1,0 +1,22 @@
+﻿requests:
+  - path: /
+    method: POST
+    body: mybogy
+  - path: /my_path
+    method: GET
+logger:
+  level: debug
+  core_id: 0
+  thread_name: logger
+loaders:
+  total: 4
+  online_connections: 10
+  core_ids:
+    - 1
+    - 2
+    - 3
+  prefix_name: http_loader
+server: 'https://onlineyamltools.com'
+online_statistics: true
+test_time: 10
+service_core_id: 0
