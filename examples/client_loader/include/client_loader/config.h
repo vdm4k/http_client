@@ -13,6 +13,7 @@ namespace bro::net::http::client::loader::config {
 struct request {
     std::string _path;
     std::string _body;
+    std::string _body_type;
     bro::net::http::client::request::type _type;
 };
 

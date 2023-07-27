@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
     if(!server_addr)
         return -1;
 
+    config->_server_address = *server_addr;
     bro::net::http::client::loader::manager manager(*config);
     manager.serve();
     return 0;
