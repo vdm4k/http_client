@@ -40,8 +40,8 @@ void request::add_body(std::string_view const &body, std::string const &content_
 }
 
 void request::proceed()  {
-    _request->proceed_events();
     _request->proceed_logic();
+    _request->proceed_events();
 }
 
 bool request::is_active() {

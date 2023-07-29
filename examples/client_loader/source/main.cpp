@@ -42,7 +42,17 @@ int main(int argc, char **argv) {
     if(!server_addr)
         return -1;
 
-    config->_server_address = *server_addr;
+    switch (config->_connection_type) {
+    case bro::net::http::client::connection_type::e_http:
+        config->_server_host_name = "http://" + server_addr->to_string() + ":22345";
+        break;
+    case bro::net::http::client::connection_type::e_https:
+        config->_server_host_name = "https://" + server_addr->to_string() + ":443";
+        break;
+    default:
+        break;
+    }
+
     bro::net::http::client::loader::manager manager(*config);
     manager.serve();
     return 0;

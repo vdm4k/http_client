@@ -31,6 +31,7 @@ public:
         bool _close_connection{true};                     ///< set close connection with server after receive response
         bool _support_gzip{true};                         ///< add header in request - support commpress data (gzip)
         bool _try_decompress_response{true};              ///< if server compress body with gzip we will decompress it. If have problems with decompress -> may disable it
+        size_t *_processed_events{nullptr};
     };
 
     /**
@@ -148,7 +149,7 @@ public:
    */
     void add_body(std::string_view const &body, std::string const &content_type, bool do_compress = false);
 
-    /*! \brief proceed request function. need only if it's in active state
+    /*! \brief proceed request function. need only if it's in active state     
    */
     void proceed();
 

@@ -1,8 +1,8 @@
 ﻿requests:
-  - path: /
+  - path: /my_path
     method: POST
     body: mybogy
-  - path: /my_path
+  - path: /
     method: GET
 logger:
   level: debug
@@ -16,7 +16,7 @@ loaders:
     - 2
     - 3
   prefix_name: http_loader
-server: 'https://onlineyamltools.com'
+server: localhost
 online_statistics: true
-test_time: 10
+test_time: 2
 service_core_id: 0

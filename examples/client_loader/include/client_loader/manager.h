@@ -15,6 +15,7 @@ private:
     void init_logger();
     void start_loaders();
     void init_loaders();
+    void print_stat();
 
     std::vector<std::unique_ptr<loader>> _loaders;
     quill::Logger* _logger = nullptr;

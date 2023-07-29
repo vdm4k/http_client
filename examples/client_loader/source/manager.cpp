@@ -13,8 +13,31 @@ manager::manager(config::client_loader & config) : _config(config) {
     init_logger();
 }
 
+void manager::print_stat() {
+    for(auto & loader : _loaders) {
+        auto stat = loader->get_statistic();
+        LOG_INFO(_logger, "Statistics for ... \nsuccess requests {}\nfailed requests {}\ntotal time {}\n\n", stat._success_requests, stat._failed_requests, stat._total_time);
+    }
+}
+
 void manager::serve() {
     signal(SIGINT, stopHandler);
+    LOG_INFO(_logger, "Start manager for loaders");
+    init_loaders();
+    auto start = std::chrono::steady_clock::now();
+
+
+    while(s_active.load(std::memory_order_acquire)) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        print_stat();
+        if(_config._test_time) {
+            std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start;
+            auto past = std::chrono::duration_cast<std::chrono::seconds>(diff);
+            if(past > *_config._test_time)
+                break;
+        }
+    }
+    _loaders.clear();
 }
 
 void manager::init_logger() {
@@ -40,9 +63,8 @@ void manager::init_logger() {
     _logger->set_log_level(_config._logger._level);
 }
 
-
 void manager::init_loaders() {
-     auto & cores = _config._loaders._core_ids;
+    auto & cores = _config._loaders._core_ids;
     for(size_t i = 0; i < _config._loaders._total; ++i) {
         auto loder_conf = _config._loaders;
         if(!cores.empty()) {
@@ -50,12 +72,11 @@ void manager::init_loaders() {
             cores.splice(cores.end(), cores, cores.begin());
         }
 
-        if(_config._loaders._prefix_name.empty())
-            _config._loaders._prefix_name = "loader_";
-        _config._loaders._prefix_name += std::to_string(i);
-//        _loaders.emplace_back(std::make_unique<loader>(loder_conf, _logger));
+        if(loder_conf._prefix_name.empty())
+            loder_conf._prefix_name = "loader_";
+        loder_conf._prefix_name += std::to_string(i);
+        _loaders.emplace_back(std::make_unique<loader>(loder_conf, _config._requests, _config._server_host_name, _logger));
     }
 }
-
 
 } // namespace bro::net::http::client::loader

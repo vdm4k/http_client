@@ -63,6 +63,8 @@ bool request::create_stream() {
     _factory->bind(_send_stream);
     _send_stream->set_state_changed_cb(
         [&](strm::stream *strm, std::any) {
+            if(_config._processed_events)
+                (*_config._processed_events)++;
             if (strm->get_state() == strm::stream::state::e_established)
                 generate_message();
             if(!strm->is_active()) {
@@ -73,6 +75,8 @@ bool request::create_stream() {
         nullptr);
     _send_stream->set_received_data_cb(
         [&](strm::stream *strm, std::any) {
+            if(_config._processed_events)
+                (*_config._processed_events)++;
             system::stack_allocator<std::byte, e_max_msg_size> st_allocator;
             auto res = strm->receive(st_allocator.get_array(), st_allocator.get_size());
             if (res > 0) {
@@ -117,7 +121,7 @@ void request::generate_message() {
 
     // count total size
     int path_header_size = client::request::to_string(_type).size() + _path.size() + header::to_string(_config._version).size() + e_eol_size
-                   + e_2_spoce_size;                                                                   // path size
+                           + e_2_spoce_size;                                                                   // path size
     int host_header_size = header::to_string(header::types::e_Host).size() + _host.size() + e_header_add_size; // host size
 
     int total = _total_size + body_size + e_eol_size + path_header_size + host_header_size;
@@ -342,18 +346,20 @@ void request::cleanup() {
 
 void request::resolve_host() {
     _resolver->resolve({_host.begin(), _host.end()},
-                      proto::ip::address::version::e_v4,
-                      [this](bro::net::proto::ip::address const &addr, std::string const &hostname, char const *err) {
-                          if (err) {
-                              std::string res("dns resolver failed with error ");
-                              res += err;
-                              res += ", for hostname - " + hostname;
-                              set_error(res.c_str());
-                          } else {
-                              _server_address.set_address(addr);
-                              create_stream();
-                          }
-                      });
+                       proto::ip::address::version::e_v4,
+                       [this](bro::net::proto::ip::address const &addr, std::string const &hostname, char const *err) {
+                           if(_config._processed_events)
+                               (*_config._processed_events)++;
+                           if (err) {
+                               std::string res("dns resolver failed with error ");
+                               res += err;
+                               res += ", for hostname - " + hostname;
+                               set_error(res.c_str());
+                           } else {
+                               _server_address.set_address(addr);
+                               create_stream();
+                           }
+                       });
 }
 
 bool request::generate_from_url() {

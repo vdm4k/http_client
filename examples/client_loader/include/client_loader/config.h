@@ -1,4 +1,5 @@
 #pragma once
+#include "http_client/common.h"
 #include "protocols/ip/address.h"
 #include <string>
 #include <vector>
@@ -22,8 +23,9 @@ struct loaders {
     size_t _online_connections{0};
     std::list<size_t> _core_ids;
     std::string _prefix_name;
-    std::chrono::microseconds _sleep{100};
+    std::chrono::microseconds _sleep{500};
     size_t _call_sleep_on_n_empty_loop_in_a_row = 1000;
+    std::chrono::milliseconds _flush_stat{1000};
 };
 
 struct logger {
@@ -37,7 +39,7 @@ struct client_loader {
     std::list<request> _requests;
     loaders _loaders;
     std::string _server_host_name;
-    bro::net::proto::ip::address _server_address;
+    bro::net::http::client::connection_type _connection_type{bro::net::http::client::connection_type::e_http};
     bro::net::proto::ip::address::version _ver{bro::net::proto::ip::address::version::e_v4};
     logger _logger;
     bool _online_statistics = false;
