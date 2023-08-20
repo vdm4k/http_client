@@ -63,7 +63,7 @@ void manager::init_logger() {
     quill::configure(q_cfg);
     quill::start();
 
-    _logger = quill::create_logger("client_loader_logger");
+    _logger = quill::create_logger(_config._logger._logger_name);
     _logger->set_log_level(_config._logger._level);
 }
 

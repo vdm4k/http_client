@@ -24,7 +24,7 @@ struct loaders {
     std::list<size_t> _core_ids;
     std::string _prefix_name;
     std::chrono::microseconds _sleep{500};
-    size_t _call_sleep_on_n_empty_loop_in_a_row = 1000;
+    size_t _call_sleep_on_n_empty_loop_in_a_row = 10;
     std::chrono::milliseconds _flush_stat{1000};
 };
 
@@ -33,6 +33,7 @@ struct logger {
     std::optional<size_t> _core;
     std::string _file_name;
     std::string _thread_name;
+    std::string _logger_name{"client_loader_logger"};
 };
 
 struct client_loader {
