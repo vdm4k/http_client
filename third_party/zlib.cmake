@@ -40,4 +40,4 @@ set_property(
 unset(compile_options)
 
 target_include_directories(zlibstatic INTERFACE ${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
-add_library(zlib::zlib ALIAS zlibstatic)
+add_library(ZLIB::ZLIB ALIAS zlibstatic)
