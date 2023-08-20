@@ -25,6 +25,7 @@ public:
     ~loader();
 
     statistic get_statistic() noexcept;
+    std::string const & get_name() noexcept;
 
 private:
 

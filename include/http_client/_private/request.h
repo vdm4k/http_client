@@ -38,7 +38,7 @@ public:
    * \param [in] set settings per request (optional)
    * \result if request initialization complete successfuly
    */
-    bool send(client::request::type tp, std::string const &url, client::request::result const &res, client::request::config *conf = nullptr);
+    bool send(client::request::type tp, std::string const &url, client::request::result &&res, client::request::config *conf = nullptr);
 
     /*! \brief add headers
    * \param [in] type header type

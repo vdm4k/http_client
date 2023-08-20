@@ -19,8 +19,8 @@ request& request::operator=(request &&req) {
 
 request::~request() {}
 
-bool request::send(type tp, std::string const & url, result const &res, config *conf) {
-    return _request->send(tp, url, res, conf);
+bool request::send(type tp, std::string const & url, result &&res, config *conf) {
+    return _request->send(tp, url, std::move(res), conf);
 }
 
 void request::add_header(std::string_view const &type, std::string_view const &value)  {

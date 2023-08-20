@@ -33,3 +33,7 @@ build
 *.app
 
 CMakeLists.txt.user
+.cache
+.github
+.vscode
+build*

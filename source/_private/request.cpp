@@ -372,7 +372,7 @@ bool request::generate_from_url() {
     return true;
 }
 
-bool request::send(client::request::type tp, std::string const & url, const client::request::result &res, client::request::config *conf) {
+bool request::send(client::request::type tp, std::string const & url, client::request::result &&res, client::request::config *conf) {
     if (is_active()) {
         res._cb({}, "request is in active state", res._data); // just for test
         return false;
@@ -387,8 +387,8 @@ bool request::send(client::request::type tp, std::string const & url, const clie
 }
 
 struct compress_node {
-    request *_request;
-    std::string *_result;
+    request *_request = nullptr;
+    std::string *_result = nullptr;
 };
 
 bool request::compress_body() {

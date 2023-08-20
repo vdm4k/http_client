@@ -16,7 +16,10 @@ manager::manager(config::client_loader & config) : _config(config) {
 void manager::print_stat() {
     for(auto & loader : _loaders) {
         auto stat = loader->get_statistic();
-        LOG_INFO(_logger, "Statistics for ... \nsuccess requests {}\nfailed requests {}\ntotal time {}\n\n", stat._success_requests, stat._failed_requests, stat._total_time);
+        LOG_INFO(_logger, "\nStatistics for {}\nsuccess requests {}\nfailed requests {}\nmax time {}\nloops {}\nmax main function {}\nmax logic function {}"
+                          "\nbusy time {}\nempty loops {}\n", loader->get_name(),
+                 stat._success_requests, stat._failed_requests, stat._max_time, stat._statistic._loops, stat._statistic._max_main_function_time,
+                 stat._statistic._max_logic_function_time, stat._statistic._busy_time, stat._statistic._empty_loops);
     }
 }
 
@@ -25,10 +28,12 @@ void manager::serve() {
     LOG_INFO(_logger, "Start manager for loaders");
     init_loaders();
     auto start = std::chrono::steady_clock::now();
+    auto sleep_time = std::chrono::milliseconds(1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 
     while(s_active.load(std::memory_order_acquire)) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(sleep_time);
         print_stat();
         if(_config._test_time) {
             std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start;
@@ -41,7 +46,6 @@ void manager::serve() {
 }
 
 void manager::init_logger() {
-
     quill::Config q_cfg;
     q_cfg.enable_console_colours = true;
     q_cfg.backend_thread_empty_all_queues_before_exit = true;

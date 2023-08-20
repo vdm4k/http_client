@@ -18,6 +18,7 @@ loader::loader(config::loaders const & conf, const std::list<config::request> &r
     _last_flush = std::chrono::steady_clock::now();
     system::thread::config config;
     config._sleep = _config._sleep;
+    config._flush_statistic = std::chrono::seconds(1);
     config._call_sleep_on_n_empty_loop_in_a_row = conf._call_sleep_on_n_empty_loop_in_a_row;
 
     _thread.run_with_logic_pre_post(system::thread::callable(&loader::serve, this),
@@ -31,6 +32,9 @@ loader::~loader() {
     _thread.stop();
 }
 
+std::string const & loader::get_name() noexcept {
+    return _thread.get_name();
+}
 
 bool loader::serve() {
     //    _resolver->proceed();
@@ -109,6 +113,7 @@ void loader::check_statistic() {
 }
 
 void loader::flush_statistic() {
+    _actual_statistic._statistic = _thread.get_statistic();
     copy_statistic(&_prev_statistic, &_actual_statistic);
     _actual_statistic = {};
 }
@@ -121,7 +126,7 @@ void loader::copy_statistic(statistic *to, statistic *from) noexcept {
     _write_stat.store(false, std::memory_order_release);
 }
 
-loader::statistic loader::get_statistic()  noexcept {
+loader::statistic loader::get_statistic() noexcept {
     statistic stat;
     copy_statistic(&stat, &_prev_statistic);
     return stat;
