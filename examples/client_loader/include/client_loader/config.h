@@ -1,8 +1,6 @@
 #pragma once
 #include "http_client/common.h"
-#include "protocols/ip/address.h"
 #include <string>
-#include <vector>
 #include <list>
 #include <optional>
 #include <chrono>
@@ -25,28 +23,32 @@ struct loaders {
     std::string _prefix_name;
     std::chrono::microseconds _sleep{500};
     size_t _call_sleep_on_n_empty_loop_in_a_row = 10;
-    std::chrono::milliseconds _flush_stat{1000};
+    std::chrono::milliseconds _flush_statistic{1000};
 };
 
 struct logger {
     quill::LogLevel _level{quill::LogLevel::Critical};
-    std::optional<size_t> _core;
+    std::optional<size_t> _core_id;
     std::string _file_name;
     std::string _thread_name;
-    std::string _logger_name{"client_loader_logger"};
+    std::string _logger_name;
+};
+
+struct server {
+    std::string _hostname;
+    bool _use_ipv6{false};
+    bro::net::http::client::connection_type _connection_type{bro::net::http::client::connection_type::e_http};
+    std::optional<uint16_t> _port;
+    bool _reuse_connections = false;
 };
 
 struct client_loader {
     std::list<request> _requests;
     loaders _loaders;
-    std::string _server_host_name;
-    bro::net::http::client::connection_type _connection_type{bro::net::http::client::connection_type::e_http};
-    bro::net::proto::ip::address::version _ver{bro::net::proto::ip::address::version::e_v4};
     logger _logger;
+    server _server;
     bool _online_statistics = false;
-    bool _reuse_connections = false;
     std::optional<std::chrono::seconds> _test_time;
-    std::optional<size_t> _service_core_id;
 };
 
 std::optional<client_loader> parse(std::string const &path);

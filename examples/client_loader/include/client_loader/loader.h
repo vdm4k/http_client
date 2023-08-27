@@ -47,9 +47,6 @@ private:
     void copy_statistic(statistic *to, statistic *from) noexcept;
     void check_statistic();
     void activate_new_connnection();
-//    void process_new_stream(strm::stream_ptr &&stream);
-//    bool compress_body(response & resp);
-//    static void parse_result_cb(request &req, std::any user_data, char const *error);
 
     statistic _prev_statistic;
     statistic _actual_statistic;
@@ -58,9 +55,6 @@ private:
     quill::Logger* _logger = nullptr;
     std::list<node> _free_connections;
     std::list<node> _active_connections;
-//    std::unordered_map<bro::strm::stream*, std::unique_ptr<connection>> _streams;
-//    std::unordered_map<bro::strm::stream*, std::unique_ptr<connection>> _streams;
-//    std::set<connection *> _failed_connections;
     std::string _url_prefix;
     std::shared_ptr<bro::strm::factory> _factory;
     std::shared_ptr<dns::resolver> _resolver;

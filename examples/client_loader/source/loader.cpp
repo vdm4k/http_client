@@ -18,7 +18,7 @@ loader::loader(config::loaders const & conf, const std::list<config::request> &r
     _last_flush = std::chrono::steady_clock::now();
     system::thread::config config;
     config._sleep = _config._sleep;
-    config._flush_statistic = std::chrono::seconds(1);
+    config._flush_statistic = _config._flush_statistic;
     config._call_sleep_on_n_empty_loop_in_a_row = conf._call_sleep_on_n_empty_loop_in_a_row;
 
     _thread.run_with_logic_pre_post(system::thread::callable(&loader::serve, this),
@@ -64,6 +64,8 @@ void loader::post_end() {
 
 void loader::send_request(std::list<node>::iterator it, config::request const & conf) {
     auto &req_node = *it;
+
+    req_node._request->proceed(); // just cleanup if needed
     if(!conf._body.empty() && !conf._body_type.empty())
         req_node._request->add_body(conf._body, conf._body_type);
 
@@ -106,7 +108,7 @@ void loader::check_statistic() {
     auto now = std::chrono::steady_clock::now();
     std::chrono::duration<double> diff = now - _last_flush;
     auto sec_past = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
-    if(sec_past >= _config._flush_stat) {
+    if(sec_past >= _config._flush_statistic) {
         _last_flush = now;
         flush_statistic();
     }

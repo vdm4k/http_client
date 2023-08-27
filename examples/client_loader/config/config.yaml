@@ -1,22 +1,26 @@
-﻿requests:
-  - path: /my_path
-    method: POST
-    body: mybogy
+requests:
   - path: /
     method: GET
 logger:
   level: debug
   core_id: 0
-  thread_name: logger
+  thread_name: server_logger
+  logger_name: server_logger
 loaders:
-  total: 4
-  online_connections: 10
+  total: 1
+  online_connections: 100
   core_ids:
     - 1
     - 2
     - 3
   prefix_name: http_loader
-server: localhost
+  sleep: 500
+  call_sleep_on_n_empty_loop_in_a_row: 10
+  flush_stat: 1000
+server:
+  hostname: localhost
+  connection_type: https
+  port: 22345
+  use_ipv6: false
 online_statistics: true
-test_time: 2
-service_core_id: 0
+test_time: 40

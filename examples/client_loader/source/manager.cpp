@@ -29,8 +29,6 @@ void manager::serve() {
     init_loaders();
     auto start = std::chrono::steady_clock::now();
     auto sleep_time = std::chrono::milliseconds(1000);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
 
     while(s_active.load(std::memory_order_acquire)) {
         std::this_thread::sleep_for(sleep_time);
@@ -51,8 +49,10 @@ void manager::init_logger() {
     q_cfg.backend_thread_empty_all_queues_before_exit = true;
     if(!_config._logger._thread_name.empty())
         q_cfg.backend_thread_name = _config._logger._thread_name;
-    if(_config._logger._core)
-        q_cfg.backend_thread_cpu_affinity = *_config._logger._core;
+    if(!_config._logger._logger_name.empty())
+        q_cfg.default_logger_name = _config._logger._logger_name;
+    if(_config._logger._core_id)
+        q_cfg.backend_thread_cpu_affinity = *_config._logger._core_id;
 
     if(!_config._logger._file_name.empty()) {
         auto file_handler = quill::file_handler(_config._logger._file_name, "w", quill::FilenameAppend::DateTime);
@@ -79,7 +79,7 @@ void manager::init_loaders() {
         if(loder_conf._prefix_name.empty())
             loder_conf._prefix_name = "loader_";
         loder_conf._prefix_name += std::to_string(i);
-        _loaders.emplace_back(std::make_unique<loader>(loder_conf, _config._requests, _config._server_host_name, _logger));
+        _loaders.emplace_back(std::make_unique<loader>(loder_conf, _config._requests, _config._server._hostname, _logger));
     }
 }
 

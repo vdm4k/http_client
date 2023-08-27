@@ -35,20 +35,24 @@ int main(int argc, char **argv) {
     CLI11_PARSE(app, argc, argv);
 
     auto config = bro::net::http::client::loader::config::parse(config_path);
-    if(!config)
+    if(!config) 
         return -1;
 
-    auto server_addr = resolve_host(config->_server_host_name, config->_ver);
-    if(!server_addr)
+    auto server_addr = resolve_host(config->_server._hostname, config->_server._use_ipv6 ? bro::net::proto::ip::address::version::e_v6 : bro::net::proto::ip::address::version::e_v4);
+    if(!server_addr) 
         return -1;
 
-    switch (config->_connection_type) {
-    case bro::net::http::client::connection_type::e_http:
-        config->_server_host_name = "http://" + server_addr->to_string() + ":22345";
+    switch (config->_server._connection_type) {
+    case bro::net::http::client::connection_type::e_http: {
+        uint16_t port = config->_server._port ? *config->_server._port : 80;
+        config->_server._hostname = "http://" + server_addr->to_string() + ":" + std::to_string(port);
         break;
-    case bro::net::http::client::connection_type::e_https:
-        config->_server_host_name = "https://" + server_addr->to_string() + ":443";
+    }
+    case bro::net::http::client::connection_type::e_https: {
+        uint16_t port = config->_server._port ? *config->_server._port : 443;
+        config->_server._hostname = "https://" + server_addr->to_string() + ":" + std::to_string(port);
         break;
+    }
     default:
         break;
     }
