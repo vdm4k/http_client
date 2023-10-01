@@ -5,6 +5,7 @@
 #include <protocols/ip/address.h>
 #include <client_loader/config.h>
 #include <client_loader/manager.h>
+#include <network/platforms/system.h>
 
 std::optional<bro::net::proto::ip::address> resolve_host(std::string const & host_name, bro::net::proto::ip::address::version proto_ver) {
 
@@ -33,6 +34,8 @@ int main(int argc, char **argv) {
     std::string config_path{"/home/vdm4k/projects/http_client/examples/client_loader/config/config.yaml"};
     app.add_option("-c,--config", config_path, "path to config file");
     CLI11_PARSE(app, argc, argv);
+
+    bro::net::disable_sig_pipe();
 
     auto config = bro::net::http::client::loader::config::parse(config_path);
     if(!config) 

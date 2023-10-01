@@ -1,4 +1,5 @@
 #include <client_loader/loader.h>
+#include <cstddef>
 #include <quill/detail/LogMacros.h>
 
 namespace bro::net::http::client::loader {
@@ -62,17 +63,16 @@ void loader::post_end() {
     LOG_INFO(_logger, "Stop loader {}", _thread.get_name());
 }
 
-void loader::send_request(std::list<node>::iterator it, config::request const & conf) {
+bool loader::send_request(std::list<node>::iterator it, config::request const & conf) {
     auto &req_node = *it;
 
-    req_node._request->proceed(); // just cleanup if needed
     if(!conf._body.empty() && !conf._body_type.empty())
         req_node._request->add_body(conf._body, conf._body_type);
 
-    req_node._stat._start = std::chrono::steady_clock::now();
+    req_node._start_request = std::chrono::steady_clock::now();
     request::config req_conf;
     req_conf._processed_events = &_processed_events;
-    req_node._request->send(conf._type,
+    return req_node._request->send(conf._type,
                             _url_prefix + conf._path,
                             {._cb =
                              [&](bro::net::http::client::response &&resp, char const *const error, std::any user_data) {
@@ -81,10 +81,9 @@ void loader::send_request(std::list<node>::iterator it, config::request const & 
                                      _actual_statistic._failed_requests++;
                                      LOG_ERROR(_logger, "request failed with error {}\n", error);
                                  } else {
-                                     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - it_con->_stat._start;
+                                     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - it_con->_start_request;
                                      _actual_statistic._success_requests++;
-                                     _actual_statistic._max_time = std::max(_actual_statistic._max_time, diff);
-                                     _actual_statistic._total_time += diff;
+                                     _actual_statistic._max_request_time = std::max(_actual_statistic._max_request_time, diff);
                                  }
                                  _free_connections.splice(_free_connections.end(), _active_connections, it_con);
                              },
@@ -98,10 +97,20 @@ void loader::activate_new_connnection() {
         return;
 
     auto it_con = _free_connections.begin();
-    auto it_req = _request_configs.begin();
-    _active_connections.splice(_active_connections.begin(), _free_connections, it_con);
-    send_request(_active_connections.begin(), *it_req);
-    _request_configs.splice(_request_configs.end(), _request_configs, it_req);
+    it_con->_request->proceed(); // NOTE: we need to call proceed because state may changed for some requests ( was active, after call proceed became failed )
+    if(_config._reuse_connections && it_con->_request->get_state() == request_state::e_active) {
+        _actual_statistic._reuse_connections++;
+        it_con->_request->soft_reset();
+    } else {
+        _actual_statistic._activated_connections++;
+        it_con->_request->reset();
+    }
+
+    auto it_req = _request_configs.begin();    
+    if(send_request(it_con, *it_req)) {
+        _active_connections.splice(_active_connections.begin(), _free_connections, it_con);
+        _request_configs.splice(_request_configs.end(), _request_configs, it_req);
+    }
 }
 
 void loader::check_statistic() {
@@ -129,7 +138,7 @@ void loader::copy_statistic(statistic *to, statistic *from) noexcept {
 }
 
 loader::statistic loader::get_statistic() noexcept {
-    statistic stat;
+    statistic stat{};
     copy_statistic(&stat, &_prev_statistic);
     return stat;
 }

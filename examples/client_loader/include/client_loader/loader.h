@@ -13,28 +13,51 @@ class loader {
 public:
 
     struct statistic {
+
+        statistic& merge(statistic const & lval) {
+            _success_requests += lval._success_requests;
+            _failed_requests += lval._failed_requests;
+            _activated_connections += lval._activated_connections;
+            _reuse_connections += lval._reuse_connections;
+
+            _max_request_time = std::max(_max_request_time, lval._max_request_time);
+            _statistic._loops = std::max(_statistic._loops, lval._statistic._loops);
+            _statistic._max_main_function_time = std::max(_statistic._max_main_function_time, lval._statistic._max_main_function_time);
+            _statistic._max_logic_function_time = std::max(_statistic._max_logic_function_time, lval._statistic._max_logic_function_time);
+            _statistic._busy_time = std::max(_statistic._busy_time, lval._statistic._busy_time);
+            _statistic._empty_loops = std::max(_statistic._empty_loops, lval._statistic._empty_loops);
+            return *this;
+        }
+
         size_t _success_requests = 0;
         size_t _failed_requests = 0;
-        std::chrono::duration<double> _total_time{0};
-        std::chrono::duration<double> _max_time{0};
+        size_t _activated_connections = 0;
+        size_t _reuse_connections = 0;
+        std::chrono::duration<double> _max_request_time{0};
         system::thread::statistic _statistic;
     };
 
 
     loader(config::loaders const& conf, std::list<config::request> const &requests, std::string const &url_prefix, quill::Logger* logger);
     ~loader();
-
+    /**
+     * \brief Get actual statistic
+     * 
+     * \return statistic 
+     */
     statistic get_statistic() noexcept;
+
+    /**
+     * \brief Get the name of loader
+     * 
+     * \return std::string const& 
+     */
     std::string const & get_name() noexcept;
 
 private:
 
-    struct stat {
-        std::chrono::steady_clock::time_point _start{};
-    };
-
     struct node {
-        stat _stat;
+        std::chrono::steady_clock::time_point _start_request{};
         std::unique_ptr<request> _request;
     };
 
@@ -42,7 +65,7 @@ private:
     void post_end();
     bool serve();
     void logic_proceed();
-    void send_request(std::list<node>::iterator it, config::request const & conf);
+    bool send_request(std::list<node>::iterator it, config::request const & conf);
     void flush_statistic();
     void copy_statistic(statistic *to, statistic *from) noexcept;
     void check_statistic();

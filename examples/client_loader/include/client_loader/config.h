@@ -24,6 +24,8 @@ struct loaders {
     std::chrono::microseconds _sleep{500};
     size_t _call_sleep_on_n_empty_loop_in_a_row = 10;
     std::chrono::milliseconds _flush_statistic{1000};
+    bool _reuse_connections = true;
+    bool _print_stat_per_loader = false;
 };
 
 struct logger {
@@ -39,7 +41,6 @@ struct server {
     bool _use_ipv6{false};
     bro::net::http::client::connection_type _connection_type{bro::net::http::client::connection_type::e_http};
     std::optional<uint16_t> _port;
-    bool _reuse_connections = false;
 };
 
 struct client_loader {

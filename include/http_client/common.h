@@ -22,4 +22,13 @@ enum class connection_type : uint8_t {
     e_https ///< https
 };
 
+/**
+  * \brief request state
+  */
+enum class request_state : uint8_t {
+    e_idle,    ///< in idle state
+    e_failed,  ///< is failed
+    e_active   ///< in active state
+};
+
 } // namespace bro::net::http::client

@@ -165,7 +165,7 @@ void request::proceed_events() {
 
 void request::proceed_logic() {
     if(_do_cleanup) {
-        cleanup();
+        reset();
         _do_cleanup = false;
     }
     if(_do_reset_send_stream) {
@@ -252,7 +252,6 @@ int request::handle_on_message_complete(llhttp_t *h) {
         req->redirect();
     } else {
         req->_result._cb(std::move(res), nullptr, req->_result._data);
-        req->cleanup();
     }
     return 0;
 }
@@ -324,11 +323,17 @@ bool request::parse_uri() {
 }
 
 void request::set_error(char const *error) {
-    _result._cb({}, error, _result._data);
+    _state = request_state::e_failed;
+    _result._cb({}, error, _result._data);    
     _do_cleanup = true;
 }
 
-void request::cleanup() {
+void request::reset() {
+    soft_reset();
+    _send_stream.reset();    
+}
+
+void request::soft_reset() {
     _type = {};
     _result = {};
     _total_size = 0;
@@ -337,10 +342,8 @@ void request::cleanup() {
     _body_s.clear();
     _body_v = {};
     _config = {};
-
-    _state = {state::e_idle};
+    _state = {request_state::e_idle};
     _response = {};
-    _send_stream.reset();
     _zstream.cleanup();
 }
 
@@ -368,16 +371,16 @@ bool request::generate_from_url() {
     if (!_host.empty())
         resolve_host();
     else
-        create_stream();
+        return create_stream();
     return true;
 }
 
 bool request::send(client::request::type tp, std::string const & url, client::request::result &&res, client::request::config *conf) {
-    if (is_active()) {
+    if (get_state() == request_state::e_active) {
         res._cb({}, "request is in active state", res._data); // just for test
         return false;
     }
-    _state = state::e_active;
+    _state = request_state::e_active;
     _type = tp;
     if (conf)
         _config = *conf;

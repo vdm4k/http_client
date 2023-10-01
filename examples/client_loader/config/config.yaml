@@ -4,23 +4,28 @@ requests:
 logger:
   level: debug
   core_id: 0
-  thread_name: server_logger
-  logger_name: server_logger
+  thread_name: client_logger
+  logger_name: client_logger
+  file_name: file.txt
 loaders:
-  total: 1
-  online_connections: 100
+  total: 5
+  online_connections: 1000
   core_ids:
     - 1
     - 2
     - 3
+    - 4
+    - 5
   prefix_name: http_loader
-  sleep: 500
+  sleep: 100
   call_sleep_on_n_empty_loop_in_a_row: 10
   flush_stat: 1000
+  reuse_connections: true
+  print_stat_per_loader: true
 server:
   hostname: localhost
   connection_type: https
-  port: 22345
-  use_ipv6: false
+  port: 23456
+  use_ipv6: false  
 online_statistics: true
-test_time: 40
+test_time: 30

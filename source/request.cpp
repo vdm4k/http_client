@@ -44,8 +44,16 @@ void request::proceed()  {
     _request->proceed_events();
 }
 
-bool request::is_active() {
-    return _request->is_active();
+request_state request::get_state() const {
+    return _request->get_state();
+}
+
+void request::soft_reset() {
+    _request->soft_reset();
+}
+
+void request::reset() {
+    _request->reset();
 }
 
 std::string_view request::to_string(type tp) {

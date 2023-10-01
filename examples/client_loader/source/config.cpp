@@ -68,6 +68,14 @@ struct convert<bro::net::http::client::loader::config::loaders> {
             rhs._flush_statistic = std::chrono::milliseconds(node["flush_statistic"].as<size_t>());
         }
 
+        if (node["reuse_connections"]) {
+            rhs._reuse_connections = node["reuse_connections"].as<bool>();
+        }
+
+        if (node["print_stat_per_loader"]) {
+            rhs._print_stat_per_loader = node["print_stat_per_loader"].as<bool>();
+        }
+
         if (node["core_ids"]) {
             auto core_ids = node["core_ids"];
             for(auto it = core_ids.begin(); it != core_ids.end(); ++it) {
@@ -94,6 +102,10 @@ struct convert<bro::net::http::client::loader::config::logger> {
 
         if (node["logger_name"]) {
             rhs._logger_name = node["logger_name"].as<std::string>();
+        }
+
+        if (node["file_name"]) {
+            rhs._file_name = node["file_name"].as<std::string>();
         }
 
         if (node["core_id"]) {
@@ -127,11 +139,7 @@ struct convert<bro::net::http::client::loader::config::server> {
 
         if (node["port"]) {
             rhs._port = node["port"].as<uint16_t>();
-        }
-
-        if (node["reuse_connections"]) {
-            rhs._reuse_connections = node["reuse_connections"].as<bool>();
-        }
+        }        
 
         if (node["connection_type"]) {
             auto connection_type(node["connection_type"].as<std::string>());

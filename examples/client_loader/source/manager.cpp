@@ -14,13 +14,31 @@ manager::manager(config::client_loader & config) : _config(config) {
 }
 
 void manager::print_stat() {
+    loader::statistic mergedStat{};
     for(auto & loader : _loaders) {
         auto stat = loader->get_statistic();
-        LOG_INFO(_logger, "\nStatistics for {}\nsuccess requests {}\nfailed requests {}\nmax time {}\nloops {}\nmax main function {}\nmax logic function {}"
-                          "\nbusy time {}\nempty loops {}\n", loader->get_name(),
-                 stat._success_requests, stat._failed_requests, stat._max_time, stat._statistic._loops, stat._statistic._max_main_function_time,
-                 stat._statistic._max_logic_function_time, stat._statistic._busy_time, stat._statistic._empty_loops);
+        mergedStat.merge(stat);
+        if(_config._loaders._print_stat_per_loader) {
+            LOG_INFO(_logger, "\nStatistics for {}\nsend requests {}\nfailed requests {}\n"
+                              "activated connections {}\nreuse connections {}\nmax request time {}\n"
+                              "loops {}\nmax main function {}\nmax logic function {}\n"
+                              "busy time {}\nempty loops {}\n",
+                     loader->get_name(), stat._success_requests, stat._failed_requests,
+                     stat._activated_connections, stat._reuse_connections, stat._max_request_time.count(),
+                     stat._statistic._loops, stat._statistic._max_main_function_time, stat._statistic._max_logic_function_time,
+                     stat._statistic._busy_time, stat._statistic._empty_loops);
+        }
+
     }
+    LOG_INFO(_logger, "\nMerged statistic\nsend requests {}\nfailed requests {}\n"
+                      "activated connections {}\nreuse connections {}\nmax request time {}\n"
+                      "loops {}\nmax main function {}\nmax logic function {}\n"
+                      "busy time {}\nempty loops {}\n",
+             mergedStat._success_requests, mergedStat._failed_requests,
+             mergedStat._activated_connections, mergedStat._reuse_connections, mergedStat._max_request_time,
+             mergedStat._statistic._loops, mergedStat._statistic._max_main_function_time,
+             mergedStat._statistic._max_logic_function_time,
+             mergedStat._statistic._busy_time, mergedStat._statistic._empty_loops);
 }
 
 void manager::serve() {

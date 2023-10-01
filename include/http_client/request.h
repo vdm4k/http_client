@@ -4,6 +4,7 @@
 #include <memory>
 #include <stream/factory.h>
 #include <dns/resolver.h>
+#include <http_client/common.h>
 #include <http_client/version.h>
 #include <http_client/response.h>
 
@@ -153,10 +154,17 @@ public:
    */
     void proceed();
 
-    /*! \brief check is active
-   * \result if request in active state return true
+   /*! \brief get current state
    */
-    bool is_active();
+    request_state get_state() const;
+
+  /*! \brief reset internal data. do not modify connection state
+   */
+    void soft_reset();
+
+   /*! \brief reset internal data. do not modify connection state
+   */
+    void reset();
 
 private:
     std::unique_ptr<_private::request> _request;   ///< pimpl here

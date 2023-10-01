@@ -13,15 +13,7 @@ namespace bro::net::http::client::_private {
  * \brief request implementation
  */
 class request {
-public:
-
-    /**
-  * \brief request state
-  */
-    enum class state : uint8_t {
-        e_idle,  ///< not active
-        e_active ///< active
-    };
+public:    
 
     /**
    * default ctor
@@ -76,10 +68,19 @@ public:
    */
     void proceed_logic();
 
-    /*! \brief check is active
-   * \result if request in active state return true
+    /*! \brief get current state
    */
-    bool is_active() { return _state == state::e_active; }
+    request_state get_state() const { return _state; }
+
+    /**
+  * \brief cleanup without reset connection
+  */
+    void soft_reset();
+
+  /**
+  * \brief cleanup
+  */
+    void reset();
 
 private:
 
@@ -112,11 +113,6 @@ private:
   * \brief set error and cleanup all
   */
     void set_error(char const *error);
-
-    /**
-  * \brief cleanup
-  */
-    void cleanup();
 
     /**
   * \brief redict original message
@@ -168,7 +164,7 @@ private:
   */
     bool compress_body();
 
-    state _state{state::e_idle};                                           ///< current state
+    request_state _state{request_state::e_idle};                           ///< current state
     connection_type _connection_type{connection_type::e_https};            ///< connection type
     client::request::type _type{};                                         ///< request type
     bool _do_cleanup = false;                                              ///< lazy cleanup to prevent erase while using something
