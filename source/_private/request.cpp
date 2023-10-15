@@ -39,6 +39,12 @@ void request::add_body(std::string_view const &body, std::string const &content_
 }
 
 bool request::create_stream() {
+
+    if (_send_stream && _send_stream->get_state() == strm::stream::state::e_established) {
+        generate_message();
+        return true;
+    }
+
     switch (_connection_type) {
     case connection_type::e_http: {
         bro::net::tcp::send::settings send_set;
@@ -112,6 +118,9 @@ void request::generate_message() {
     if (_config._close_connection) {
         char const *close = "close";
         add_header(header::to_string(header::types::e_Connection), close);
+    } else {
+        char const *keep_alive = "keep-alive";
+        add_header(header::to_string(header::types::e_Connection), keep_alive);
     }
 
     int body_size = _body_s.empty() ? _body_v.size() : _body_s.size();
@@ -343,7 +352,11 @@ void request::soft_reset() {
     _body_v = {};
     _config = {};
     _state = {request_state::e_idle};
-    _response = {};
+    _response._body.clear();
+    _response._headers.clear();
+    _response._is_gzip_encoded = {false};                                 ///< is commpressed by gzip
+    _response._status_code = {status::code::e_Unknown_Code};      ///< status code
+    _response._version = {header::version::e_Unknown_Version}; ///< http version
     _zstream.cleanup();
 }
 

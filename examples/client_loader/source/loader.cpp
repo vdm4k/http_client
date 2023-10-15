@@ -72,6 +72,7 @@ bool loader::send_request(std::list<node>::iterator it, config::request const & 
     req_node._start_request = std::chrono::steady_clock::now();
     request::config req_conf;
     req_conf._processed_events = &_processed_events;
+    req_conf._close_connection = !_config._reuse_connections;
     return req_node._request->send(conf._type,
                             _url_prefix + conf._path,
                             {._cb =

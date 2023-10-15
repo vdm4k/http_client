@@ -9,7 +9,7 @@ logger:
   file_name: file.txt
 loaders:
   total: 5
-  online_connections: 1000
+  online_connections: 100
   core_ids:
     - 1
     - 2
