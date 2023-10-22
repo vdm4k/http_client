@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.14.0)
 include(FetchContent)
 
 FetchContent_Declare(
-  llhttp
-  GIT_REPOSITORY https://github.com/vdm4k/llhttp-release-v8.1.0.git
+  llhttp  
+  URL "https://github.com/nodejs/llhttp/archive/refs/tags/release/v9.1.3.tar.gz"
 )
 
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+set(BUILD_STATIC_LIBS ON CACHE INTERNAL "")
 FetchContent_MakeAvailable(llhttp)
