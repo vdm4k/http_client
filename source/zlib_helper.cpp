@@ -13,6 +13,10 @@ enum {
   e_max_buffer = std::numeric_limits<uint16_t>::max()
 };
 
+stream::~stream() {
+  cleanup();
+}
+
 void stream::cleanup() {
   switch (_type) {
   case type::e_compressor: {

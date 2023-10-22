@@ -27,7 +27,7 @@ public:
    * \param [in] tp request type
    * \param [in] url specific url
    * \param [in] res request result
-   * \param [in] set settings per request (optional)
+   * \param [in] conf configuration per request (optional)
    * \result if request initialization complete successfuly
    */
     bool send(client::request::type tp, std::string const &url, client::request::result &&res, client::request::config *conf = nullptr);
@@ -48,12 +48,14 @@ public:
 
     /*! \brief add body
    * \param [in] body body value
+   * \param [in] content_type type of body content
    * \param [in] compress_body do compress
    */
     void add_body(std::string const &body, std::string const &content_type, bool compress_body = false);
 
     /*! \brief add body
    * \param [in] body body value
+   * \param [in] content_type type of body content
    * \param [in] compress_body do compress
    *
    * \note optimization if we use same headers ( not generate them )

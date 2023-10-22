@@ -32,7 +32,7 @@ public:
         bool _close_connection{true};                     ///< set close connection with server after receive response
         bool _support_gzip{true};                         ///< add header in request - support commpress data (gzip)
         bool _try_decompress_response{true};              ///< if server compress body with gzip we will decompress it. If have problems with decompress -> may disable it
-        size_t *_processed_events{nullptr};
+        size_t *_processed_events{nullptr};               ///< if set will increment it if receive some data
     };
 
     /**
@@ -117,7 +117,7 @@ public:
    * \param [in] tp request type
    * \param [in] url specific url
    * \param [in] res request result
-   * \param [in] set settings per request (optional)
+   * \param [in] conf configuration per request (optional)
    * \result if request initialization complete successfuly
    */
     bool send(type tp, std::string const &url, result &&res, config *conf = nullptr);
@@ -138,12 +138,14 @@ public:
 
     /*! \brief add body
    * \param [in] body body value
+   * \param [in] content_type type of body content
    * \param [in] do_compress do compress
    */
     void add_body(std::string const &body, std::string const &content_type, bool do_compress = false);
 
     /*! \brief add body
    * \param [in] body body value
+   * \param [in] content_type type of body content
    * \param [in] do_compress do compress
    *
    * \note optimization if we use same headers ( not generate them )

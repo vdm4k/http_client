@@ -24,6 +24,12 @@ public:
     };
 
     /**
+     * \brief Destroy the stream object
+     * 
+     */
+    ~stream();
+
+    /**
   * \brief A type alias for a callback function that returns a result.
   *
   * This function will be called with filled data and set lenght ( > 0) or filled error.

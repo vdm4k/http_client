@@ -402,9 +402,13 @@ bool request::send(client::request::type tp, std::string const & url, client::re
     return compress_body() && generate_from_url();
 }
 
+/**
+ * \brief data wrapper
+ * 
+ */
 struct compress_node {
-    request *_request = nullptr;
-    std::string *_result = nullptr;
+    request *_request = nullptr;   ///< pointer on current request
+    std::string *_result = nullptr; ///< pointer on string to save 
 };
 
 bool request::compress_body() {
